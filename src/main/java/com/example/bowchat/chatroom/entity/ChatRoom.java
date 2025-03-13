@@ -3,6 +3,8 @@ package com.example.bowchat.chatroom.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 @Entity
 @Table(name = "CHAT_ROOMS")
 @AllArgsConstructor
@@ -17,5 +19,10 @@ public class ChatRoom {
     private Long id;
 
     private String name;
+
+    @ElementCollection
+    @CollectionTable(name = "CHATROOM_PARTICIPANTS", joinColumns = @JoinColumn(name = "CHATROOM_ID"))
+    @Column(name = "PARTICIPANT")
+    private List<String> participants;
 
 }

@@ -18,7 +18,10 @@ public class ChatMessage {
     private String id;
 
     private Long roomId;
+
     private String sender;
+
     private String content;
+
     private LocalDateTime createDate;
 }

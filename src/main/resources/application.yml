@@ -20,6 +20,7 @@ spring:
     hibernate:
       ddl-auto: update
     open-in-view: false
+
   h2:
     console:
       enabled: true
@@ -28,3 +29,8 @@ spring:
   data:
     mongodb:
       uri: mongodb://localhost:27017/chatdb
+
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: true
