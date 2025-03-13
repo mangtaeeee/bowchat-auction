@@ -1,5 +1,6 @@
 package com.example.bowchat.chatmessage.service;
 
+import com.example.bowchat.chatmessage.dto.ChatMessageDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -8,9 +9,9 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ChatProducer {
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, ChatMessageDTO> kafkaTemplate;
 
-    public void sendMessage(String message) {
-        kafkaTemplate.send("chat-topic", message);
+    public void sendMessage(ChatMessageDTO messageDTO) {
+        kafkaTemplate.send("chat-topic", messageDTO);
     }
 }
