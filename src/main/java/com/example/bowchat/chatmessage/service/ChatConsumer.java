@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -18,6 +19,7 @@ public class ChatConsumer {
 
 
     @KafkaListener(topics = "chat-topic", groupId = "chat-group")
+    @Transactional
     public void listen(ChatMessageDTO messageDTO) {
         saveChatMessage(messageDTO);
         // 소켓 메시지 전송
