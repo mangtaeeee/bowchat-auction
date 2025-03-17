@@ -5,8 +5,10 @@ import com.example.bowchat.chatroom.dto.ChatRoomResponse;
 import com.example.bowchat.chatroom.entity.ChatRoom;
 import com.example.bowchat.chatroom.repository.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -28,7 +30,7 @@ public class ChatRoomService {
 
     public ChatRoomResponse getChatRoom(Long chatRoomId) {
         ChatRoom chatRoom = chatRoomRepository.findWithParticipantsById(chatRoomId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 채팅방"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."));
         return ChatRoomResponse.from(chatRoom);
     }
 
