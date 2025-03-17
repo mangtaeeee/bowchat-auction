@@ -1,5 +1,6 @@
 package com.example.bowchat.chatmessage.service;
 
+import com.example.bowchat.chatmessage.dto.ChatMessageResponse;
 import com.example.bowchat.chatmessage.entity.ChatMessage;
 import com.example.bowchat.chatmessage.repository.ChatMessageRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +14,8 @@ public class ChatMessageService {
 
     private final ChatMessageRepository chatMessageRepository;
 
-    public List<ChatMessage> findByChatMessages(Long chatRoomId){
-        return chatMessageRepository.findByRoomId(chatRoomId);
+    public List<ChatMessageResponse> findByChatMessages(Long chatRoomId){
+        return chatMessageRepository.findByRoomId(chatRoomId)
+                .stream().map(ChatMessageResponse::from).toList();
     }
 }
