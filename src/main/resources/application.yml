@@ -10,6 +10,13 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer # 변경
       properties:
         spring.json.value.default.type: com.example.bowchat.chatmessage.dto.ChatMessageDTO # 추가
+  thymeleaf:
+    cache: false
+    devtools:
+      restart:
+        enabled: true
+      livereload:
+        enabled: true
 
   datasource:
     url: jdbc:h2:mem:testdb

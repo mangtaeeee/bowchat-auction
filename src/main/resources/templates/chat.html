@@ -1,143 +1,204 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-    <head>
-        <meta charset="UTF-8">
-        <title>WebSocket Chat</title>
-        <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
-    </head>
-    <body>
-    <h2>WebSocket Chat</h2>
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
+</head>
+<body>
 
-    <div>
-        <label>채팅방 ID:</label>
-        <input type="text" id="roomId" placeholder="roomId 입력">
-        <button onclick="connect()">연결</button>
-        <button onclick="disconnect()">연결 해제</button>
-    </div>
+<h2>WebSocket Chat</h2>
 
-    <div>
-        <label>이름:</label>
-        <input type="text" id="username" placeholder="이름 입력">
-        <br>
-        <label>메시지:</label>
-        <input type="text" id="message" placeholder="메시지 입력">
-        <button onclick="sendMessage()">전송</button>
-    </div>
+<!-- 채팅방 생성 -->
+<div>
+    <label>새 채팅방 이름:</label>
+    <input type="text" id="newRoomName" placeholder="채팅방 이름 입력">
+    <button onclick="createChatRoom()">채팅방 생성</button>
+</div>
 
-    <h3>채팅 로그</h3>
-    <div id="chat" style="border: 1px solid #ccc; padding: 10px; min-height: 200px;"></div>
+<!-- 채팅방 목록 -->
+<h3>채팅방 목록</h3>
+<div id="chatRooms"></div>
 
-    <script>
-        let stompClient = null;
-        let roomId = null;
-        let isRoomValid = false;
-        let subscription = null;  // 🚀 추가: 현재 구독을 저장할 변수
+<!-- 채팅방 입장 -->
+<h3>채팅방 입장</h3>
+<div>
+    <label>채팅방 ID:</label>
+    <input type="text" id="roomId" placeholder="roomId 입력">
+    <button onclick="connect()">연결</button>
+    <button onclick="disconnect()">연결 해제</button>
+</div>
 
-        function connect() {
-            roomId = document.getElementById("roomId").value;
-            if (!roomId) {
-                alert("채팅방 ID를 입력하세요.");
-                return;
-            }
+<!-- 메시지 입력 -->
+<div>
+    <label>이름:</label>
+    <input type="text" id="username" placeholder="이름 입력">
+    <br>
+    <label>메시지:</label>
+    <input type="text" id="message" placeholder="메시지 입력">
+    <button onclick="sendMessage()">전송</button>
+</div>
 
-            console.log(`채팅방 ID: ${roomId}`);
+<!-- 채팅 로그 -->
+<h3>채팅 로그</h3>
+<div id="chat" style="border: 1px solid #ccc; padding: 10px; min-height: 200px;"></div>
 
-            // ✅ 채팅방 존재 여부 확인 후 연결
-            fetch(`/chat/rooms/${roomId}`)
-                .then(response => {
-                    console.log('서버 응답 상태:', response.status);
+<script>
+    let stompClient = null;
+    let roomId = null;
+    let isRoomValid = false;
+    let subscription = null;
 
-                    if (response.status === 404) {
-                        alert("채팅방이 존재하지 않습니다.");
-                        isRoomValid = false;
-                        return;
-                    }
-
-                    isRoomValid = true;
-                    openWebSocket();
-                })
-                .catch(error => {
-                    console.error("채팅방 요청 실패:", error);
-                    isRoomValid = false;
-                });
+    // ✅ 채팅방 생성
+    function createChatRoom() {
+        let chatRoomName = document.getElementById("newRoomName").value;
+        if (!chatRoomName) {
+            alert("채팅방 이름을 입력하세요.");
+            return;
         }
 
-        function openWebSocket() {
-            let chatDiv = document.getElementById("chat");
-            chatDiv.innerHTML = '';  // ✅ 기존 채팅 내역 초기화
+        fetch("/chat/rooms", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ chatRoomName: chatRoomName })
+        })
+            .then(response => {
+                if (response.ok) {
+                    alert("채팅방이 생성되었습니다.");
+                    loadChatRooms();
+                } else {
+                    alert("채팅방 생성 실패.");
+                }
+            })
+            .catch(error => console.error("채팅방 생성 오류:", error));
+    }
 
-            if (stompClient !== null && stompClient.connected) {
-                console.log("🔄 기존 WebSocket 연결 해제 중...");
-                disconnect();
-            }
+    // ✅ 채팅방 목록 불러오기
+    function loadChatRooms() {
+        fetch("/chat/rooms")
+            .then(response => response.json())
+            .then(data => {
+                console.log("채팅방 데이터:", data);
+                let chatRoomsDiv = document.getElementById("chatRooms");
+                chatRoomsDiv.innerHTML = "";
 
-            let socket = new SockJS('/ws/chat');
-            stompClient = Stomp.over(socket);
+                data.forEach(room => {
+                    let roomElement = document.createElement("p");
+                    roomElement.innerHTML = `<b>${room.roomId}</b>: ${room.roomName}
+                        <button onclick="joinRoom(${room.roomId})">입장</button>`;
+                    chatRoomsDiv.appendChild(roomElement);
+                });
+            })
+            .catch(error => console.error("채팅방 목록 불러오기 오류:", error));
+    }
 
-            stompClient.connect({}, function (frame) {
-                console.log("✅ WebSocket Connected:", frame);
+    // ✅ 채팅방 입장
+    function joinRoom(selectedRoomId) {
+        document.getElementById("roomId").value = selectedRoomId;
+        connect();
+    }
 
-                // ✅ 기존 구독이 있다면 먼저 해제
-                if (subscription !== null) {
-                    subscription.unsubscribe();
-                    console.log("🚀 기존 구독 해제 완료!");
+    // ✅ WebSocket 연결
+    function connect() {
+        roomId = document.getElementById("roomId").value;
+        if (!roomId) {
+            alert("채팅방 ID를 입력하세요.");
+            return;
+        }
+
+        fetch(`/chat/rooms/${roomId}`)
+            .then(response => {
+                if (response.status === 404) {
+                    alert("채팅방이 존재하지 않습니다.");
+                    isRoomValid = false;
+                    return;
                 }
 
-                // ✅ 새로운 채팅방 구독 설정
-                subscription = stompClient.subscribe('/topic/chat/' + roomId, function (message) {
-                    let messageBody = JSON.parse(message.body);
-                    if (messageBody.roomId == roomId) {
-                        showMessage(messageBody);
-                    }
-                });
-
-            }, function (error) {
-                console.error("❌ WebSocket connection error: ", error);
+                isRoomValid = true;
+                openWebSocket();
+            })
+            .catch(error => {
+                console.error("채팅방 요청 실패:", error);
+                isRoomValid = false;
             });
+    }
+
+    function openWebSocket() {
+        let chatDiv = document.getElementById("chat");
+        chatDiv.innerHTML = '';
+
+        if (stompClient !== null && stompClient.connected) {
+            disconnect();
         }
 
-        function disconnect() {
-            if (stompClient !== null) {
-                console.log("🚫 WebSocket 연결 해제");
-                stompClient.disconnect();
-            }
+        let socket = new SockJS('/ws/chat');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function (frame) {
+            console.log("✅ WebSocket Connected:", frame);
+
             if (subscription !== null) {
                 subscription.unsubscribe();
-                console.log("🔄 구독 해제 완료");
-                subscription = null;
-            }
-        }
-
-        function sendMessage() {
-            if (!isRoomValid) {
-                alert("유효하지 않은 채팅방입니다. 방 ID를 확인하세요.");
-                return;
             }
 
-            let username = document.getElementById("username").value;
-            let message = document.getElementById("message").value;
-            if (!roomId || !username || !message) {
-                alert("모든 필드를 입력하세요.");
-                return;
-            }
+            subscription = stompClient.subscribe('/topic/chat/' + roomId, function (message) {
+                let messageBody = JSON.parse(message.body);
+                if (messageBody.roomId == roomId) {
+                    showMessage(messageBody);
+                }
+            });
 
-            let chatMessage = {
-                roomId: roomId,
-                sender: username,
-                message: message
-            };
+        }, function (error) {
+            console.error("❌ WebSocket connection error: ", error);
+        });
+    }
 
-            stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+    function disconnect() {
+        if (stompClient !== null) {
+            stompClient.disconnect();
+        }
+        if (subscription !== null) {
+            subscription.unsubscribe();
+            subscription = null;
+        }
+    }
+
+    function sendMessage() {
+        if (!isRoomValid) {
+            alert("유효하지 않은 채팅방입니다.");
+            return;
         }
 
-        function showMessage(message) {
-            let chatDiv = document.getElementById("chat");
-            let newMessage = document.createElement("p");
-            newMessage.textContent = message.sender + ": " + message.message;
-            chatDiv.appendChild(newMessage);
+        let username = document.getElementById("username").value;
+        let message = document.getElementById("message").value;
+        if (!roomId || !username || !message) {
+            alert("모든 필드를 입력하세요.");
+            return;
         }
-    </script>
 
-    </body>
+        let chatMessage = {
+            roomId: roomId,
+            sender: username,
+            message: message
+        };
+
+        stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+    }
+
+    function showMessage(message) {
+        let chatDiv = document.getElementById("chat");
+        let newMessage = document.createElement("p");
+        newMessage.textContent = message.sender + ": " + message.message;
+        chatDiv.appendChild(newMessage);
+    }
+
+    // ✅ 페이지 로드 시 채팅방 목록 불러오기
+    window.onload = loadChatRooms;
+
+</script>
+
+</body>
 </html>

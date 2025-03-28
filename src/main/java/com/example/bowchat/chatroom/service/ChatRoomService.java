@@ -28,6 +28,10 @@ public class ChatRoomService {
         chatRoomRepository.save(chatRoom);
     }
 
+    public List<ChatRoomResponse> getAllChatRooms() {
+        return chatRoomRepository.findAll().stream().map(ChatRoomResponse::from).toList();
+    }
+
     public ChatRoomResponse getChatRoom(Long chatRoomId) {
         ChatRoom chatRoom = chatRoomRepository.findWithParticipantsById(chatRoomId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."));
