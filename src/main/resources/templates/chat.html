@@ -98,7 +98,21 @@
     // ✅ 채팅방 입장
     function joinRoom(selectedRoomId) {
         document.getElementById("roomId").value = selectedRoomId;
+        loadPreviousMessages(selectedRoomId);
         connect();
+    }
+
+    function loadPreviousMessages(roomId) {
+        fetch(`/chat/messages/${roomId}`)
+            .then(response => response.json())
+            .then(messages => {
+                let chatDiv = document.getElementById("chat");
+                chatDiv.innerHTML = ''; // 채팅 로그 초기화
+                messages.forEach(message => {
+                    showMessage(message); // 과거 메시지 출력
+                });
+            })
+            .catch(error => console.error("과거 메시지 불러오기 오류:", error));
     }
 
     // ✅ WebSocket 연결
