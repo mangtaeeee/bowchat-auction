@@ -1,7 +1,7 @@
 package com.example.bowchat.user.entity;
 
 
-import com.example.bowchat.chatroom.entity.Role;
+import com.example.bowchat.user.dto.SingUpRequest;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,5 +37,15 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
+    public static User createLocalUserFromRequest(SingUpRequest signInRequest, String password) {
+        return User.builder()
+                .email(signInRequest.email())
+                .password(password)
+                .nickname(signInRequest.nickName())
+                .provider("local")
+                .role(Role.USER)
+                .build();
+    }
 
 }

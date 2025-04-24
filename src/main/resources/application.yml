@@ -50,9 +50,12 @@ spring:
 
   data:
     mongodb:
-      uri: mongodb://localhost:27017/chatdb
+      uri: ${MONGODB_URI}
 
 decorator:
   datasource:
     p6spy:
       enable-logging: true
+
+jwt:
+  secret: ${JWT_SECRET}
