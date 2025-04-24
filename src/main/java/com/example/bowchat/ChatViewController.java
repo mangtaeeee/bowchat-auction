@@ -8,6 +8,6 @@ public class ChatViewController {
 
     @GetMapping("/chat")
     public String chatView() {
-        return "chat";  // src/main/resources/templates/chat.html 렌더링
+        return "chat";
     }
 }
