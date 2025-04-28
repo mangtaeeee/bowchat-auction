@@ -32,6 +32,9 @@ spring:
             token-uri: https://oauth2.googleapis.com/token
             user-info-uri: https://openidconnect.googleapis.com/v1/userinfo
 
+  jwt:
+    secret: ${JWT_SECRET}
+
   datasource:
     url: jdbc:h2:mem:testdb
     driver-class-name: org.h2.Driver
@@ -56,6 +59,3 @@ decorator:
   datasource:
     p6spy:
       enable-logging: true
-
-jwt:
-  secret: ${JWT_SECRET}
