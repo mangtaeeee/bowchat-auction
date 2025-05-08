@@ -16,9 +16,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public void singUn(SingUpRequest request) {
+    public void signup(SingUpRequest request) {
         if (userRepository.existsByEmail(request.email())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다.");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "이미 존재하는 이메일입니다.");
         }
         String encodedPassword = passwordEncoder.encode(request.password());
         userRepository.save(User.createLocalUserFromRequest(request,encodedPassword));

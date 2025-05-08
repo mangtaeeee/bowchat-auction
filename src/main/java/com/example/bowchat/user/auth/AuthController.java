@@ -31,7 +31,6 @@ public class AuthController {
                 )
         );
 
-        // 2. 인증 성공하면 JWT 발급
         return jwtProvider.generateToken(authentication);
     }
 
