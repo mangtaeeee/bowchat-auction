@@ -15,9 +15,9 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping("/auth/signup")
+    @PostMapping("/user/signup")
     public void signup(@RequestBody SingUpRequest request) {
-        userService.singUn(request);
+        userService.signup(request);
     }
 
 }
