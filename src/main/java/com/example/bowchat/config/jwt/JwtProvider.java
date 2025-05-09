@@ -37,6 +37,14 @@ public class JwtProvider {
                 .compact();
     }
 
+    public String generateToken(User user) {
+        return Jwts.builder()
+                .setSubject(user.getEmail())
+                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiration()))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
     //토큰에서 인증정보 꺼내기
     public Authentication getAuthentication(String token) {
         Claims claims = parseClaims(token);
