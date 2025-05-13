@@ -10,4 +10,14 @@ public class ChatViewController {
     public String chatView() {
         return "chat";
     }
+
+    @GetMapping("/login")
+    public String loginView() {
+        return "login";
+    }
+
+    @GetMapping("/signup")
+    public String signupView() {
+        return "signup";
+    }
 }
