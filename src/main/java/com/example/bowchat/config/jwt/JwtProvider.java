@@ -48,8 +48,8 @@ public class JwtProvider {
     //토큰에서 인증정보 꺼내기
     public Authentication getAuthentication(String token) {
         Claims claims = parseClaims(token);
-
         String email = claims.getSubject();
+        System.out.println("✅ WebSocket 토큰에서 파싱된 이메일: " + email);
 
         // 토큰에서 이메일을 가져와서 DB에서 사용자 정보 조회 (대규모 서비스 전환 시 사용자 조회 쿼리 최적화 필요)
         User user = userRepository.findByEmail(email)
