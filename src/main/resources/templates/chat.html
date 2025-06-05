@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>WebSocket Chat</title>
@@ -32,9 +32,6 @@
 
 <!-- 메시지 입력 -->
 <div>
-    <label>이름:</label>
-    <input type="text" id="username" placeholder="이름 입력">
-    <br>
     <label>메시지:</label>
     <input type="text" id="message" placeholder="메시지 입력">
     <button onclick="sendMessage()">전송</button>
@@ -50,7 +47,6 @@
     let isRoomValid = false;
     let subscription = null;
 
-    // ✅ 채팅방 생성
     function createChatRoom() {
         const token = localStorage.getItem('jwtToken');
         if (!token) {
@@ -59,7 +55,7 @@
             return;
         }
 
-        let chatRoomName = document.getElementById("newRoomName").value;
+        const chatRoomName = document.getElementById("newRoomName").value;
         if (!chatRoomName) {
             alert("채팅방 이름을 입력하세요.");
             return;
@@ -71,27 +67,24 @@
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`
             },
-            body: JSON.stringify({ chatRoomName: chatRoomName })
+            body: JSON.stringify({ chatRoomName })
         })
             .then(response => {
                 if (response.status === 401 || response.status === 403) {
-                    alert('로그인이 만료되었습니다.');
+                    alert("로그인이 만료되었습니다.");
                     localStorage.clear();
                     window.location.href = '/login';
                     return;
                 }
-
                 if (response.ok) {
                     alert("채팅방이 생성되었습니다.");
                     loadChatRooms();
                 } else {
                     alert("채팅방 생성 실패.");
                 }
-            })
-            .catch(error => console.error("채팅방 생성 오류:", error));
+            });
     }
 
-    // 채팅방 목록 불러오기
     function loadChatRooms() {
         const token = localStorage.getItem('jwtToken');
         if (!token) {
@@ -105,7 +98,7 @@
         })
             .then(response => {
                 if (response.status === 401 || response.status === 403) {
-                    alert('로그인이 만료되었습니다.');
+                    alert("로그인이 만료되었습니다.");
                     localStorage.clear();
                     window.location.href = '/login';
                     return;
@@ -113,22 +106,17 @@
                 return response.json();
             })
             .then(data => {
-                if (!data) return;
-                console.log("채팅방 데이터:", data);
-                let chatRoomsDiv = document.getElementById("chatRooms");
+                const chatRoomsDiv = document.getElementById("chatRooms");
                 chatRoomsDiv.innerHTML = "";
-
                 data.forEach(room => {
                     let roomElement = document.createElement("p");
                     roomElement.innerHTML = `<b>${room.roomId}</b>: ${room.roomName}
                     <button onclick="joinRoom(${room.roomId})">입장</button>`;
                     chatRoomsDiv.appendChild(roomElement);
                 });
-            })
-            .catch(error => console.error("채팅방 목록 불러오기 오류:", error));
+            });
     }
 
-    // 채팅방 입장
     function joinRoom(selectedRoomId) {
         document.getElementById("roomId").value = selectedRoomId;
         loadPreviousMessages(selectedRoomId);
@@ -137,43 +125,19 @@
 
     function loadPreviousMessages(roomId) {
         const token = localStorage.getItem('jwtToken');
-        if (!token) {
-            alert('로그인이 필요합니다.');
-            window.location.href = '/login';
-            return;
-        }
-
         fetch(`/chat/messages/${roomId}`, {
             headers: { "Authorization": `Bearer ${token}` }
         })
-            .then(response => {
-                if (response.status === 401 || response.status === 403) {
-                    alert('로그인이 만료되었습니다.');
-                    localStorage.clear();
-                    window.location.href = '/login';
-                    return;
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(messages => {
-                if (!messages) return;
-                let chatDiv = document.getElementById("chat");
+                const chatDiv = document.getElementById("chat");
                 chatDiv.innerHTML = '';
-                messages.forEach(message => {
-                    showMessage(message);
-                });
-            })
-            .catch(error => console.error("과거 메시지 불러오기 오류:", error));
+                messages.forEach(message => showMessage(message));
+            });
     }
 
-    // ✅ WebSocket 연결
     function connect() {
         roomId = document.getElementById("roomId").value;
-        if (!roomId) {
-            alert("채팅방 ID를 입력하세요.");
-            return;
-        }
-
         fetch(`/chat/rooms/${roomId}`)
             .then(response => {
                 if (response.status === 404) {
@@ -181,50 +145,35 @@
                     isRoomValid = false;
                     return;
                 }
-
                 isRoomValid = true;
                 openWebSocket();
-            })
-            .catch(error => {
-                console.error("채팅방 요청 실패:", error);
-                isRoomValid = false;
             });
     }
 
     function openWebSocket() {
-        let chatDiv = document.getElementById("chat");
+        const chatDiv = document.getElementById("chat");
         chatDiv.innerHTML = '';
+        if (stompClient !== null && stompClient.connected) disconnect();
 
-        if (stompClient !== null && stompClient.connected) {
-            disconnect();
-        }
-
-        let socket = new SockJS('/ws/chat');
+        const token = localStorage.getItem('jwtToken');
+        const socket = new SockJS('/ws/chat?token=' + token); // ✅ 쿼리 파라미터에 토큰 붙임
         stompClient = Stomp.over(socket);
 
         stompClient.connect({}, function (frame) {
-            console.log("✅ WebSocket Connected:", frame);
-
-            if (subscription !== null) {
-                subscription.unsubscribe();
-            }
-
+            if (subscription !== null) subscription.unsubscribe();
             subscription = stompClient.subscribe('/topic/chat/' + roomId, function (message) {
-                let messageBody = JSON.parse(message.body);
-                if (messageBody.roomId === roomId) {
+                const messageBody = JSON.parse(message.body);
+                console.log("📩 수신된 메시지:", messageBody);
+                console.log("roomId 비교:", messageBody.roomId, roomId);
+                if (String(messageBody.roomId) === String(roomId)) {
                     showMessage(messageBody);
                 }
             });
-
-        }, function (error) {
-            console.error("❌ WebSocket connection error: ", error);
         });
     }
 
     function disconnect() {
-        if (stompClient !== null) {
-            stompClient.disconnect();
-        }
+        if (stompClient !== null) stompClient.disconnect();
         if (subscription !== null) {
             subscription.unsubscribe();
             subscription = null;
@@ -237,16 +186,17 @@
             return;
         }
 
-        let username = document.getElementById("username").value;
-        let message = document.getElementById("message").value;
-        if (!roomId || !username || !message) {
-            alert("모든 필드를 입력하세요.");
+        const sender = localStorage.getItem("userEmail");
+        const message = document.getElementById("message").value;
+
+        if (!roomId || !sender || !message) {
+            alert("메시지 내용을 입력하세요.");
             return;
         }
 
-        let chatMessage = {
+        const chatMessage = {
             roomId: roomId,
-            sender: username,
+            sender: sender,
             message: message
         };
 
@@ -254,29 +204,24 @@
     }
 
     function showMessage(message) {
-        let chatDiv = document.getElementById("chat");
-        let newMessage = document.createElement("p");
+        const chatDiv = document.getElementById("chat");
+        const newMessage = document.createElement("p");
         newMessage.textContent = message.sender + ": " + message.message;
         chatDiv.appendChild(newMessage);
     }
 
-    // ✅ 페이지 로드 시 채팅방 목록 불러오기
-    window.onload = function() {
-        const token = localStorage.getItem('jwtToken');
-        if (!token) {
-            alert('로그인 후 이용해주세요.');
-            window.location.href = '/login';
+    window.onload = function () {
+        const token = localStorage.getItem("jwtToken");
+        const userEmail = localStorage.getItem("userEmail");
+
+        if (!token || !userEmail) {
+            alert("로그인 후 이용해주세요.");
+            window.location.href = "/login";
             return;
         }
 
-        const userEmail = localStorage.getItem('userEmail');
-        if (userEmail) {
-            document.getElementById('username').value = userEmail;
-        }
-
-        loadChatRooms(); // 기존 함수 실행
+        loadChatRooms();
     };
-
 </script>
 
 </body>

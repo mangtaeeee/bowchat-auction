@@ -1,6 +1,5 @@
 package com.example.bowchat.user.entity;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -21,7 +20,7 @@ public record PrincipalDetails(User user) implements UserDetails {
 
     @Override
     public String getUsername() {
-        return user.getNickname();
+        return user.getEmail();
     }
 
     @Override
