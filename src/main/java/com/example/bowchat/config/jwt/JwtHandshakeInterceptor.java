@@ -2,17 +2,18 @@ package com.example.bowchat.config.jwt;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
-import java.net.URI;
 import java.security.Principal;
 import java.util.Map;
 
 @RequiredArgsConstructor
+@Slf4j
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
     private final JwtProvider jwtProvider;
@@ -23,7 +24,6 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
                                    @NonNull WebSocketHandler wsHandler,
                                    @NonNull Map<String, Object> attributes) {
         if (request instanceof ServletServerHttpRequest servletRequest) {
-            URI uri = URI.create(servletRequest.getServletRequest().getRequestURI()); // e.g., "/ws/chat?token=..."
             String query = servletRequest.getServletRequest().getQueryString(); // e.g., "token=xxx.yyy.zzz"
 
             if (query != null && query.startsWith("token=")) {
@@ -33,7 +33,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
                     attributes.put("user", principal); // WebSocketSession에서 사용할 수 있게 저장
                     return true;
                 } catch (Exception e) {
-                    System.out.println("토큰 검증 실패: " + e.getMessage());
+                    log.info("WebSocket Handshake 실패: {}", e.getMessage());
                     return false;
                 }
             }
