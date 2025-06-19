@@ -31,19 +31,21 @@ public class User {
     private String nickname;
 
     // 로그인 제공자: local, google 등
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String provider;
+    private ProviderType provider;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
 
     public static User createLocalUserFromRequest(SingUpRequest signInRequest, String password) {
         return User.builder()
                 .email(signInRequest.email())
                 .password(password)
                 .nickname(signInRequest.nickName())
-                .provider("local")
+                .provider(ProviderType.LOCAL)
                 .role(Role.USER)
                 .build();
     }
