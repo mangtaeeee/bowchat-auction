@@ -9,7 +9,7 @@
 <body>
 
 <h2>WebSocket Chat</h2>
-
+<button onclick="logout()">로그아웃</button>
 <!-- 채팅방 생성 -->
 <div>
     <label>새 채팅방 이름:</label>
@@ -209,12 +209,40 @@
         newMessage.textContent = message.sender + ": " + message.message;
         chatDiv.appendChild(newMessage);
     }
+    function logout() {
+        localStorage.removeItem("jwtToken");
+        localStorage.removeItem("userEmail");
+        alert("로그아웃 되었습니다.");
+        window.location.href = "/login";
+    }
+
 
     window.onload = function () {
-        const token = localStorage.getItem("jwtToken");
+        // 1. 먼저 토큰 파싱
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get("token");
+
+        if (token) {
+            try {
+                localStorage.setItem("jwtToken", token);
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const email = payload.sub;
+                localStorage.setItem("userEmail", email);
+
+                // URL 정리
+                const url = new URL(window.location);
+                url.searchParams.delete("token");
+                window.history.replaceState({}, document.title, url);
+            } catch (e) {
+                console.error("JWT 처리 오류:", e);
+            }
+        }
+
+        // 2. 토큰 확인 후 채팅방 불러오기
+        const jwt = localStorage.getItem("jwtToken");
         const userEmail = localStorage.getItem("userEmail");
 
-        if (!token || !userEmail) {
+        if (!jwt || !userEmail) {
             alert("로그인 후 이용해주세요.");
             window.location.href = "/login";
             return;

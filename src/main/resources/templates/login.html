@@ -16,6 +16,7 @@
 
 <br>
 <a href="/signup">회원가입 하러가기</a>
+<a href="/oauth2/authorization/google">구글 로그인</a>
 
 <script>
     document.getElementById('login-form').addEventListener('submit', async function (e) {
@@ -44,6 +45,28 @@
             alert('로그인 실패: ' + error.message);
         }
     });
+
+    (function handleOAuthToken() {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get("token");
+
+        if (token) {
+            try {
+                localStorage.setItem("jwtToken", token);
+
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const email = payload.sub;
+                localStorage.setItem("userEmail", email);
+
+                // URL 정리
+                const url = new URL(window.location);
+                url.searchParams.delete("token");
+                window.history.replaceState({}, document.title, url);
+            } catch (e) {
+                console.error("JWT 처리 오류:", e);
+            }
+        }
+    })();
 </script>
 
 </body>
