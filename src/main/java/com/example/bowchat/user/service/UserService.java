@@ -20,7 +20,7 @@ public class UserService {
     @Transactional
     public void signup(SingUpRequest request) {
         if (userRepository.existsByEmail(request.email())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "이미 존재하는 이메일입니다.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 존재하는 이메일입니다.");
         }
         String encodedPassword = passwordEncoder.encode(request.password());
         userRepository.save(User.createLocalUserFromRequest(request,encodedPassword));
