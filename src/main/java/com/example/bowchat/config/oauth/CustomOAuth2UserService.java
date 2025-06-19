@@ -26,7 +26,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String provider = request.getClientRegistration().getRegistrationId(); // google, naver
         String email = oAuth2User.getAttribute("email");
 
-        // 기존 사용자 찾기 / 없으면 생성
+        if (email == null || email.isEmpty()) {
+            throw new OAuth2AuthenticationException("이메일을 제공하지 않는 SNS입니다.");
+        }
         User user = userRepository.findByEmail(email)
                 .orElseGet(() -> {
                     User newUser = User.builder()
