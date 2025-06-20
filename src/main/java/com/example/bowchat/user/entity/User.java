@@ -35,9 +35,18 @@ public class User {
     @Column(nullable = false)
     private ProviderType provider;
 
+    @Column
+    private String providerId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
+    public void updateNickname(String newNickname) {
+        this.nickname = newNickname;
+    }
+
+
 
 
     public static User createLocalUserFromRequest(SingUpRequest signInRequest, String password) {
@@ -49,5 +58,6 @@ public class User {
                 .role(Role.USER)
                 .build();
     }
+
 
 }

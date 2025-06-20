@@ -1,27 +1,34 @@
 package com.example.bowchat.user.entity;
 
+import com.example.bowchat.config.oauth.userinfo.GoogleOAuth2UserInfo;
+import com.example.bowchat.config.oauth.userinfo.KakaoOAuth2UserInfo;
+import com.example.bowchat.config.oauth.userinfo.NaverOAuth2UserInfo;
+import com.example.bowchat.config.oauth.userinfo.OAuth2UserInfo;
+import lombok.Getter;
+
+import java.util.Map;
+import java.util.function.Function;
+
+@Getter
 public enum ProviderType {
-    LOCAL("local"),
-    GOOGLE("google"),
-    KAKAO("kakao"),
-    NAVER("naver");
+    LOCAL(attributes -> {
+        throw new UnsupportedOperationException("Local provider does not support OAuth2UserInfo creation");
+    }),
+    GOOGLE(GoogleOAuth2UserInfo::new),
+    KAKAO(KakaoOAuth2UserInfo::new),
+    NAVER(NaverOAuth2UserInfo::new);
 
-    private final String provider;
+    private final Function<Map<String, Object>, OAuth2UserInfo> creator;
 
-    ProviderType(String provider) {
-        this.provider = provider;
+    ProviderType(Function<Map<String, Object>, OAuth2UserInfo> creator) {
+        this.creator = creator;
     }
 
-    public String getProvider() {
-        return provider;
+    public OAuth2UserInfo create(Map<String, Object> attributes) {
+        return creator.apply(attributes);
     }
 
-    public static ProviderType fromString(String provider) {
-        for (ProviderType type : ProviderType.values()) {
-            if (type.provider.equalsIgnoreCase(provider)) {
-                return type;
-            }
-        }
-        throw new IllegalArgumentException("Unknown provider: " + provider);
+    public boolean isOAuthProvider() {
+        return this != LOCAL;
     }
 }

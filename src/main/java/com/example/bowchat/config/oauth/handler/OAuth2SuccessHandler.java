@@ -1,4 +1,4 @@
-package com.example.bowchat.config.oauth;
+package com.example.bowchat.config.oauth.handler;
 
 import com.example.bowchat.config.jwt.JwtProvider;
 import com.example.bowchat.user.entity.PrincipalDetails;

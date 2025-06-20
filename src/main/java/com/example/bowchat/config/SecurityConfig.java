@@ -2,8 +2,8 @@ package com.example.bowchat.config;
 
 import com.example.bowchat.config.jwt.JwtAuthenticationFilter;
 import com.example.bowchat.config.jwt.JwtProvider;
-import com.example.bowchat.config.oauth.CustomOAuth2UserService;
-import com.example.bowchat.config.oauth.OAuth2SuccessHandler;
+import com.example.bowchat.config.oauth.service.CustomOAuth2UserService;
+import com.example.bowchat.config.oauth.handler.OAuth2SuccessHandler;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
