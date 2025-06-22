@@ -27,8 +27,4 @@ public enum ProviderType {
     public OAuth2UserInfo create(Map<String, Object> attributes) {
         return creator.apply(attributes);
     }
-
-    public boolean isOAuthProvider() {
-        return this != LOCAL;
-    }
 }
