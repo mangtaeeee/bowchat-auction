@@ -15,17 +15,29 @@ public class KakaoOAuth2UserInfo extends OAuth2UserInfo {
 
     @Override
     public String getEmail() {
-        return (String) ((Map<String, Object>) attributes.get("kakao_account")).get("email");
+        Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
+        if (kakaoAccount != null && kakaoAccount.containsKey("email")) {
+            return (String) kakaoAccount.get("email");
+        }
+        return null;
     }
 
     @Override
     public String getName() {
-        return (String) ((Map<String, Object>) attributes.get("properties")).get("nickname");
+        Map<String, Object> properties = (Map<String, Object>) attributes.get("properties");
+        if (properties != null && properties.containsKey("nickname")) {
+            return (String) properties.get("nickname");
+        }
+        return null;
     }
 
     @Override
     public String getImageUrl() {
-        return (String) ((Map<String, Object>) attributes.get("properties")).get("profile_image");
+        Map<String, Object> properties = (Map<String, Object>) attributes.get("properties");
+        if (properties != null && properties.containsKey("profile_image")) {
+            return (String) properties.get("profile_image");
+        }
+        return null;
     }
 
     @Override

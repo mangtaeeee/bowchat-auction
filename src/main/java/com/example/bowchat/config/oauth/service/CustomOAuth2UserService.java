@@ -42,7 +42,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
 
         log.info("4. 사용자 정보 조회 또는 신규 사용자 등록");
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailAndProvider(email,provider)
                 .map(existingUser -> updateExistingUser(existingUser, oAuth2UserInfo))
                 .orElseGet(() -> registerNewUser(provider, oAuth2UserInfo));
 

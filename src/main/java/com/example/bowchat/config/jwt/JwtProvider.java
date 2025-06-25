@@ -1,9 +1,11 @@
 package com.example.bowchat.config.jwt;
 
 import com.example.bowchat.user.entity.PrincipalDetails;
+import com.example.bowchat.user.entity.ProviderType;
 import com.example.bowchat.user.entity.User;
 import com.example.bowchat.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
@@ -38,20 +40,29 @@ public class JwtProvider {
     }
 
     public String generateToken(User user) {
-        return Jwts.builder()
+        JwtBuilder builder= Jwts.builder()
                 .setSubject(user.getEmail())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiration()))
-                .signWith(getSigningKey())
-                .compact();
+                .signWith(getSigningKey());
+
+        if (user.getProvider() != ProviderType.LOCAL) {
+            builder.claim("provider", user.getProvider().name());
+        }
+
+        return builder.compact();
     }
 
     //토큰에서 인증정보 꺼내기
     public Authentication getAuthentication(String token) {
         Claims claims = parseClaims(token);
         String email = claims.getSubject();
+        String providerName = claims.get("provider", String.class);
 
-        // 토큰에서 이메일을 가져와서 DB에서 사용자 정보 조회 (대규모 서비스 전환 시 사용자 조회 쿼리 최적화 필요)
-        User user = userRepository.findByEmail(email)
+        ProviderType provider = (providerName == null)
+                ? ProviderType.LOCAL
+                : ProviderType.valueOf(providerName);
+
+        User user = userRepository.findByEmailAndProvider(email, provider)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
         PrincipalDetails principal = new PrincipalDetails(user);

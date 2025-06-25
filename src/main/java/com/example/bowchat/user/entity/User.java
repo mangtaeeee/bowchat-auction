@@ -9,7 +9,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "USERS")
+@Table(
+        name = "users",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"provider", "providerId"})
+        }
+)
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -21,7 +26,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column
     private String email;
 
     // 일반 로그인용. OAuth2 로그인은 null일 수 있음
