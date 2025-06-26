@@ -1,17 +1,14 @@
 package com.example.bowchat.user.auth;
 
-import com.example.bowchat.config.jwt.JwtProvider;
 import com.example.bowchat.user.auth.dto.AuthResponse;
 import com.example.bowchat.user.auth.service.AuthService;
 import com.example.bowchat.user.dto.LoginRequest;
-import com.example.bowchat.user.repository.UserRepository;
+import com.example.bowchat.user.dto.UserResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,8 +21,23 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/auth/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest loginRequest) {
-        return ResponseEntity.ok(authService.login(loginRequest));
+    public ResponseEntity<UserResponse> login(
+            @RequestBody LoginRequest loginRequest,
+            HttpServletResponse response
+    ) {
+        log.info("Login attempt for email: {}", loginRequest.email());
+        AuthResponse authResponse = authService.login(loginRequest);
+        response.setHeader("Authorization", "Bearer " + authResponse.accessToken());
+
+        Cookie refreshTokenCookie = new Cookie("refreshToken", authResponse.refreshToken());
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(true);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60);
+        response.addCookie(refreshTokenCookie);
+
+
+        return ResponseEntity.ok(new UserResponse(authResponse.userInfo()));
     }
 
 }

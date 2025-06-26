@@ -12,4 +12,5 @@ public class JwtProperties {
     private String secretKey;
 
     private final long accessTokenExpiration = 1000 * 60 * 60 * 5; // 5시간
+    private final long refreshTokenExpiration = 1000 * 60 * 60 * 24 * 14; // 14일
 }

@@ -52,6 +52,20 @@ public class JwtProvider {
         return builder.compact();
     }
 
+    // Refresh Token 생성
+    public String generateRefreshToken(String email) {
+        return Jwts.builder()
+                .setSubject(email)
+                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getRefreshTokenExpiration()))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public long getRefreshTokenExpiration() {
+        return jwtProperties.getRefreshTokenExpiration();
+    }
+
+
     //토큰에서 인증정보 꺼내기
     public Authentication getAuthentication(String token) {
         Claims claims = parseClaims(token);
