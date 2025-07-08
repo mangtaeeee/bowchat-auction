@@ -146,14 +146,6 @@ Swagger UI: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/
 
 ---
 
-## 프로젝트 특징
-- 도메인 중심 설계 (auth/chatmessage/chatroom)
-- Kafka 비동기 메시징으로 대규모 트래픽 처리
-- JWT + OAuth2 통합 인증 설계
-- Docker Compose로 개발환경 손쉬운 재현
-
----
-
 ## 향후 계획
 - AWS EC2 배포 및 S3 연동
 - GitHub Actions 기반 CI/CD 파이프라인 구축
