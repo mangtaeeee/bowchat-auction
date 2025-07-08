@@ -19,7 +19,6 @@ JWT 기반 인증과 OAuth2 소셜 로그인(Google, Kakao, Naver)을 지원하�
 
 ## 시스템 아키텍처
 
-![BowChat Architecture](https://user-images.githubusercontent.com/00000000/bowchat-architecture.png)
 
 > **설계 포인트**
 > - WebSocket(STOMP) + Kafka 메시지 브로커 + Redis 캐싱
