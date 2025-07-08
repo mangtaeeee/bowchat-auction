@@ -29,7 +29,7 @@ public class JwtProvider {
         return Keys.hmacShaKeyFor(jwtProperties.getSecretKey().getBytes());
     }
 
-    // 토큰 생성
+    // 로컬 로그인 시 Access Token 생성
     public String generateToken(Authentication authentication) {
         PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
         return Jwts.builder()
@@ -39,6 +39,7 @@ public class JwtProvider {
                 .compact();
     }
 
+    // SNS 로그인 시 Access Token 생성
     public String generateToken(User user) {
         JwtBuilder builder= Jwts.builder()
                 .setSubject(user.getEmail())

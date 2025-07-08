@@ -54,7 +54,7 @@ public class AuthService {
             log.error("2-2. 일반 로그인 인증 실패: {}", loginRequest.email());
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "아이디 혹은 비밀번호가 올바르지 않습니다.");
         }
-        log.info("3. 일반 로그인 토큰 생성");
+        log.info("3. 일반 로그인 토큰 생성 및 리프레시 토큰 저장");
         String token = jwtProvider.generateToken(authentication);
         String refreshToken = jwtProvider.generateRefreshToken(user.getEmail());
 
