@@ -1,5 +1,5 @@
 
-# BowChat - 실시간 채팅 시스템
+# BowChat - SNS 회원가입 채팅
 
 ![Java](https://img.shields.io/badge/Java-17-007396?logo=java&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?logo=springboot)
