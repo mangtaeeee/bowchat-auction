@@ -1,6 +1,6 @@
 package com.example.bowchat.user.auth.service;
 
-import com.example.bowchat.config.jwt.JwtProvider;
+import com.example.bowchat.user.auth.jwt.JwtProvider;
 import com.example.bowchat.user.auth.dto.AuthResponse;
 import com.example.bowchat.user.auth.repository.RefreshTokenRepository;
 import com.example.bowchat.user.dto.LoginRequest;

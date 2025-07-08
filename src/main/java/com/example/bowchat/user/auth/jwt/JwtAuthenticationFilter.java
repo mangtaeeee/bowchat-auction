@@ -1,4 +1,4 @@
-package com.example.bowchat.config.jwt;
+package com.example.bowchat.user.auth.jwt;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

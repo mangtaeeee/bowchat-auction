@@ -1,4 +1,4 @@
-package com.example.bowchat.config.jwt;
+package com.example.bowchat.user.auth.jwt;
 
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;

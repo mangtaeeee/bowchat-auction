@@ -1,7 +1,7 @@
 package com.example.bowchat.config;
 
-import com.example.bowchat.config.jwt.JwtHandshakeInterceptor;
-import com.example.bowchat.config.jwt.JwtProvider;
+import com.example.bowchat.user.auth.jwt.JwtHandshakeInterceptor;
+import com.example.bowchat.user.auth.jwt.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;

@@ -1,6 +1,6 @@
-package com.example.bowchat.config.oauth.handler;
+package com.example.bowchat.user.auth.oauth.handler;
 
-import com.example.bowchat.config.jwt.JwtProvider;
+import com.example.bowchat.user.auth.jwt.JwtProvider;
 import com.example.bowchat.user.auth.repository.RefreshTokenRepository;
 import com.example.bowchat.user.entity.PrincipalDetails;
 import com.example.bowchat.user.entity.User;

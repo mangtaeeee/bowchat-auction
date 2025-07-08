@@ -1,7 +1,7 @@
-package com.example.bowchat.config.oauth.service;
+package com.example.bowchat.user.auth.oauth.service;
 
-import com.example.bowchat.config.oauth.userinfo.OAuth2UserInfo;
-import com.example.bowchat.config.oauth.util.OAuth2UserInfoFactory;
+import com.example.bowchat.user.auth.oauth.userinfo.OAuth2UserInfo;
+import com.example.bowchat.user.auth.oauth.util.OAuth2UserInfoFactory;
 import com.example.bowchat.user.entity.PrincipalDetails;
 import com.example.bowchat.user.entity.ProviderType;
 import com.example.bowchat.user.entity.Role;

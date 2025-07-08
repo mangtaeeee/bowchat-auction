@@ -1,16 +1,16 @@
-package com.example.bowchat.config.oauth.userinfo;
+package com.example.bowchat.user.auth.oauth.userinfo;
 
 import java.util.Map;
 
-public class NaverOAuth2UserInfo extends OAuth2UserInfo {
+public class GoogleOAuth2UserInfo extends OAuth2UserInfo {
 
-    public NaverOAuth2UserInfo(Map<String, Object> attributes) {
+    public GoogleOAuth2UserInfo(Map<String, Object> attributes) {
         super(attributes);
     }
 
     @Override
     public String getProviderId() {
-        return (String) attributes.get("id");
+        return (String) attributes.get("sub");
     }
 
     @Override
@@ -25,11 +25,11 @@ public class NaverOAuth2UserInfo extends OAuth2UserInfo {
 
     @Override
     public String getImageUrl() {
-        return (String) attributes.get("profile_image");
+        return (String) attributes.get("picture");
     }
 
     @Override
     public String getProviderType() {
-        return "naver";
+        return "google";
     }
 }

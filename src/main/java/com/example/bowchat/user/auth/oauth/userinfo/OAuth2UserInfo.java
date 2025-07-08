@@ -1,4 +1,4 @@
-package com.example.bowchat.config.oauth.userinfo;
+package com.example.bowchat.user.auth.oauth.userinfo;
 
 import java.util.Map;
 

@@ -1,9 +1,9 @@
 package com.example.bowchat.user.entity;
 
-import com.example.bowchat.config.oauth.userinfo.GoogleOAuth2UserInfo;
-import com.example.bowchat.config.oauth.userinfo.KakaoOAuth2UserInfo;
-import com.example.bowchat.config.oauth.userinfo.NaverOAuth2UserInfo;
-import com.example.bowchat.config.oauth.userinfo.OAuth2UserInfo;
+import com.example.bowchat.user.auth.oauth.userinfo.GoogleOAuth2UserInfo;
+import com.example.bowchat.user.auth.oauth.userinfo.KakaoOAuth2UserInfo;
+import com.example.bowchat.user.auth.oauth.userinfo.NaverOAuth2UserInfo;
+import com.example.bowchat.user.auth.oauth.userinfo.OAuth2UserInfo;
 import lombok.Getter;
 
 import java.util.Map;
