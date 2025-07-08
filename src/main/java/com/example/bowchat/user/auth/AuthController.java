@@ -25,7 +25,6 @@ public class AuthController {
             @RequestBody LoginRequest loginRequest,
             HttpServletResponse response
     ) {
-        log.info("Login attempt for email: {}", loginRequest.email());
         AuthResponse authResponse = authService.login(loginRequest);
         response.setHeader("Authorization", "Bearer " + authResponse.accessToken());
 
