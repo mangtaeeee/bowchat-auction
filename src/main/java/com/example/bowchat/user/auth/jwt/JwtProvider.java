@@ -102,4 +102,9 @@ public class JwtProvider {
                 .parseClaimsJws(token)
                 .getBody();
     }
+    // 토큰에서 이메일 추출
+    public String getEmailFromToken(String token) {
+        Claims claims = parseClaims(token);
+        return claims.getSubject();
+    }
 }

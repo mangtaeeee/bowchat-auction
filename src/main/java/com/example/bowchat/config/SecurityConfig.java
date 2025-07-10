@@ -1,15 +1,16 @@
 package com.example.bowchat.config;
 
+import com.example.bowchat.user.auth.CustomAuthenticationProvider;
 import com.example.bowchat.user.auth.jwt.JwtAuthenticationFilter;
 import com.example.bowchat.user.auth.jwt.JwtProvider;
-import com.example.bowchat.user.auth.oauth.service.CustomOAuth2UserService;
 import com.example.bowchat.user.auth.oauth.handler.OAuth2SuccessHandler;
+import com.example.bowchat.user.auth.oauth.service.CustomOAuth2UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -70,7 +71,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
-        return configuration.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(HttpSecurity http, CustomAuthenticationProvider customAuthenticationProvider) throws Exception {
+        return http.getSharedObject(AuthenticationManagerBuilder.class)
+                .authenticationProvider(customAuthenticationProvider)
+                .build();
     }
 }

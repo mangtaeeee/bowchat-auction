@@ -5,6 +5,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.time.Duration;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -24,6 +25,11 @@ public class RefreshTokenRepository {
         return redisTemplate.opsForValue().get(PREFIX + email);
     }
 
+    public Optional<String> findByKey(String key) {
+        return Optional.ofNullable(redisTemplate.opsForValue().get(key));
+    }
+
+
     // 토큰 삭제
     public void delete(String email) {
         redisTemplate.delete(PREFIX + email);
@@ -33,4 +39,5 @@ public class RefreshTokenRepository {
     public boolean exists(String email) {
         return Boolean.TRUE.equals(redisTemplate.hasKey(PREFIX + email));
     }
+
 }

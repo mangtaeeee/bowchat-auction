@@ -1,13 +1,13 @@
 package com.example.bowchat.user.auth.service;
 
-import com.example.bowchat.user.auth.jwt.JwtProvider;
 import com.example.bowchat.user.auth.dto.AuthResponse;
-import com.example.bowchat.user.auth.repository.RefreshTokenRepository;
+import com.example.bowchat.user.auth.jwt.JwtProvider;
 import com.example.bowchat.user.dto.LoginRequest;
-import com.example.bowchat.user.dto.UserInfo;
-import com.example.bowchat.user.entity.ProviderType;
+import com.example.bowchat.user.entity.PrincipalDetails;
 import com.example.bowchat.user.entity.User;
 import com.example.bowchat.user.repository.UserRepository;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,12 +15,13 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Arrays;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 @Slf4j
 public class AuthService {
 
@@ -28,21 +29,12 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final RefreshTokenService refreshTokenService;
+    private final TokenService tokenService;
 
     public AuthResponse login(LoginRequest loginRequest) {
+        log.info("CustomAuthenticationProvider로 인증 시도");
 
-        log.info("1. 일반 로그인 사용자 조회: {}", loginRequest.email());
-        User user = userRepository.findByEmail(loginRequest.email())
-                .orElseThrow(() ->
-                        new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."));
-
-        if (user.getProvider() != ProviderType.LOCAL) {
-            log.error("1-2. SNS 로그인 계정으로 일반 로그인 시도: {}", loginRequest.email());
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "SNS 로그인 계정입니다. 일반 로그인 불가");
-        }
-
-        log.info("2. 일반 로그인 사용자 인증");
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.email(),
@@ -50,21 +42,49 @@ public class AuthService {
                 )
         );
 
-        if (!authentication.isAuthenticated()) {
-            log.error("2-2. 일반 로그인 인증 실패: {}", loginRequest.email());
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "아이디 혹은 비밀번호가 올바르지 않습니다.");
+        PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
+        User user = principalDetails.getUser();
+
+        return tokenService.issueTokens(user);
+    }
+
+    public String refreshAccessToken(HttpServletRequest request) {
+        // 1. 쿠키에서 리프레시 토큰 추출
+        String refreshToken = getRefreshTokenFromCookies(request);
+        log.info("리프레시 토큰 추출: {}", refreshToken);
+
+        // 2. 리프레시 토큰 검증
+        if (!jwtProvider.validateToken(refreshToken)) {
+            log.warn("리프레시 토큰 검증 실패");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "유효하지 않은 리프레시 토큰입니다.");
         }
-        log.info("3. 일반 로그인 토큰 생성 및 리프레시 토큰 저장");
-        String token = jwtProvider.generateToken(authentication);
-        String refreshToken = jwtProvider.generateRefreshToken(user.getEmail());
 
-        log.info("4. 일반 로그인 리프레시 토큰 저장");
-        refreshTokenRepository.save(loginRequest.email(), refreshToken, jwtProvider.getRefreshTokenExpiration());
+        // 3. 이메일 추출 및 Redis 조회
+        String email = jwtProvider.getEmailFromToken(refreshToken);
+        String savedRefreshToken = refreshTokenService.findRefreshTokenByEmail(email);
 
-        return AuthResponse.builder()
-                .accessToken(token)
-                .refreshToken(refreshToken)
-                .userInfo(UserInfo.of(user))
-                .build();
+        if (!refreshToken.equals(savedRefreshToken)) {
+            log.warn("리프레시 토큰 불일치: 저장된={}, 요청된={}", savedRefreshToken, refreshToken);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "리프레시 토큰이 일치하지 않습니다.");
+        }
+
+        // 4. 사용자 조회 및 새 액세스 토큰 발급
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+
+        String newAccessToken = jwtProvider.generateToken(user);
+        log.info("새로운 액세스 토큰 발급 완료");
+
+        return newAccessToken;
+    }
+
+
+    public static String getRefreshTokenFromCookies(HttpServletRequest request) {
+        return Optional.ofNullable(request.getCookies())
+                .flatMap(cookies -> Arrays.stream(cookies)
+                        .filter(c -> "refreshToken".equals(c.getName()))
+                        .map(Cookie::getValue)
+                        .findFirst())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "리프레시 토큰이 없습니다."));
     }
 }
