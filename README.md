@@ -1,88 +1,152 @@
 
-# 채팅 시스템 설정 및 실행 가이드
+# BowChat - SNS 회원가입 채팅
 
-이 프로젝트는 Spring Boot, MongoDB, Kafka, H2 메모리 데이터베이스를 사용하여 채팅방 시스템을 구축했습니다. 아래는 이 프로젝트를 로컬에서 설정하고 실행하는 방법입니다.
-환경 정보 파일은 로컬에서만 쓰기위해 올려뒀습니다.
-
-## 필수 환경
-
-- **Homebrew**: macOS에서 패키지 관리 도구로 사용됩니다.
-- **MongoDB**: 채팅 메시지를 저장하는 NoSQL 데이터베이스입니다.
-- **Kafka**: 메시지 큐 시스템으로, 채팅 메시지를 효율적으로 처리합니다.
-
-## 로컬 환경 설정
-
-### 1. MongoDB 설정
-
-MongoDB를 로컬에서 설정하는 방법은 아래와 같습니다.
-
-#### MongoDB 설치 및 실행
-
-1. **Homebrew 업데이트**  
-   ```bash
-   brew update
-   ```
-
-2. **MongoDB Tap 추가**  
-   ```bash
-   brew tap mongodb/brew
-   ```
-
-3. **MongoDB 설치**  
-   ```bash
-   brew install mongodb-community@7.0
-   ```
-
-4. **터미널에서 MongoDB 실행**  
-   ```bash
-   brew services start mongodb/brew/mongodb-community
-   ```
-
-5. **MongoDB 접속 확인**  
-   ```bash
-   mongosh
-   use chatdb
-   ```
-
-6. **터미널에서 MongoDB 종료**  
-   ```bash
-   brew services stop mongodb/brew/mongodb-community
-   ```
-
-### 2. Kafka 설정
-
-Kafka는 채팅 메시지를 처리하는 메시지 큐 시스템입니다.
-
-#### Kafka 설치 및 실행
-
-1. **Homebrew 업데이트**  
-   ```bash
-   brew update
-   ```
-
-2. **Kafka Tap 추가**  
-   ```bash
-   brew tap kafka/brew
-   ```
-
-3. **Kafka 설치**  
-   ```bash
-   brew install kafka
-   ```
-
-4. **터미널에서 Kafka 실행**  
-   ```bash
-   brew services start kafka
-   ```
-
-5. **Kafka 접속 확인**  
-   ```bash
-   kafka-topics.sh --list --bootstrap-server localhost:9092
-   ```
-
-6. **터미널에서 Kafka 종료**  
-   ```bash
-   brew services stop kafka
-   ```
+![Java](https://img.shields.io/badge/Java-17-007396?logo=java&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?logo=springboot)
+![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?logo=mongodb)
+![Kafka](https://img.shields.io/badge/Kafka-3.x-231F20?logo=apachekafka)
+![Redis](https://img.shields.io/badge/Redis-7.x-DC382D?logo=redis)
+![Docker](https://img.shields.io/badge/Docker-20.10-2496ED?logo=docker)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
+
+Spring Boot, MongoDB, Kafka, Redis, WebSocket 기반의 **실시간 채팅 애플리케이션**입니다.  
+JWT 기반 인증과 OAuth2 소셜 로그인(Google, Kakao, Naver)을 지원하며, 사용자 관리 및 채팅방 관리 기능을 제공합니다.  
+대규모 트래픽 대응을 위해 Kafka 메시지 브로커와 Redis 캐시를 적용했습니다.
+
+---
+
+## 시스템 아키텍처
+
+
+> **설계 포인트**
+> - WebSocket(STOMP) + Kafka 메시지 브로커 + Redis 캐싱
+> - 인증 흐름: OAuth2 → JWT 발급 → Redis RefreshToken 관리
+> - 채팅 메시지 MongoDB 저장 및 H2로 채팅방 관리
+
+---
+
+## 주요 기능
+
+- JWT 기반 회원가입/로그인
+- OAuth2 소셜 로그인 (Google, Kakao, Naver)
+- WebSocket 실시간 채팅
+- Kafka 비동기 메시지 처리
+- MongoDB 채팅 로그 저장
+- Redis 캐시를 통한 세션 관리
+- Swagger API 문서 제공
+- Docker Compose 개발환경 제공
+
+---
+
+## 기술 스택
+
+| 구분          | 기술                          |
+|---------------|---------------------------------|
+| Language      | Java 17                        |
+| Framework     | Spring Boot 3.x, Spring Security|
+| Database      | MongoDB, H2 (메모리 DB)        |
+| Message Queue | Apache Kafka                   |
+| Cache         | Redis                          |
+| Protocol      | WebSocket (STOMP)              |
+| DevOps        | Docker, Docker Compose         |
+
+---
+
+## 프로젝트 구조
+
+```
+src/main/java/com/example/bowchat
+├── auth                # 인증 도메인 (JWT + OAuth2)
+│   ├── controller
+│   ├── dto
+│   ├── jwt
+│   ├── oauth
+│   ├── repository
+│   └── service
+├── chatmessage         # 채팅 메시지 도메인
+├── chatroom            # 채팅방 도메인
+├── config              # 보안/캐시/웹소켓 설정
+├── global              # 글로벌 공통 처리 (예외, 유틸)
+└── BowchatApplication  # 메인 애플리케이션
+```
+
+---
+
+## 로컬 개발환경 (Docker Compose)
+
+### 사전 준비
+- Docker
+- Docker Compose
+- Java 17
+- Gradle 8.x
+
+---
+
+### Docker Compose 실행
+
+1. 루트 디렉토리에 `docker-compose.yml` 파일 생성:
+```yaml
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: bowchat-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data/mongo:/data/db
+
+  kafka:
+    image: bitnami/kafka:3.5
+    container_name: bowchat-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+    depends_on:
+      - zookeeper
+
+  zookeeper:
+    image: bitnami/zookeeper:3.8
+    container_name: bowchat-zookeeper
+    ports:
+      - "2181:2181"
+
+  redis:
+    image: redis:7
+    container_name: bowchat-redis
+    ports:
+      - "6379:6379"
+```
+
+2. 실행:
+```bash
+docker-compose up -d
+```
+
+---
+
+### 환경 변수 설정
+루트에 `.env` 파일 생성:
+```
+JWT_SECRET=your_jwt_secret_key
+OAUTH_CLIENT_ID=your_client_id
+OAUTH_CLIENT_SECRET=your_client_secret
+```
+
+---
+
+## API 문서
+Swagger UI: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+
+---
+
+## 향후 계획
+- AWS EC2 배포 및 S3 연동
+- GitHub Actions 기반 CI/CD 파이프라인 구축
+- Prometheus + Grafana 모니터링 추가
