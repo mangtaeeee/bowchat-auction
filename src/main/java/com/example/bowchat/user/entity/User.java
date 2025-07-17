@@ -1,12 +1,16 @@
 package com.example.bowchat.user.entity;
 
 
+import com.example.bowchat.chatroom.entity.ChatRoomParticipant;
 import com.example.bowchat.user.dto.SingUpRequest;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(
@@ -46,6 +50,9 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatRoomParticipant> chatRooms = new ArrayList<>();
 
     public void updateNickname(String newNickname) {
         this.nickname = newNickname;

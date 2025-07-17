@@ -9,13 +9,14 @@ import java.util.List;
 public record ChatRoomResponse(
         Long roomId,
         String roomName,
-        List<String> participants
+        List<ChatParticipantResponse> participants
 ) {
     public static ChatRoomResponse from(ChatRoom chatRoom) {
         return ChatRoomResponse.builder()
                 .roomId(chatRoom.getId())
                 .roomName(chatRoom.getName())
-                .participants(List.copyOf(chatRoom.getParticipants()))
+                .participants(chatRoom.getParticipants().stream().map(
+                        ChatParticipantResponse::of).toList())
                 .build();
     }
 }
