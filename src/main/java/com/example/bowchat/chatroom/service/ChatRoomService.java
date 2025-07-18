@@ -27,11 +27,11 @@ public class ChatRoomService {
 
         ChatRoom chatRoom = ChatRoom.builder()
                 .name(request.chatRoomName())
-                .owner(owner) // ✅ Owner 설정
+                .owner(owner)
                 .build();
 
         chatRoomRepository.save(chatRoom);
-        chatRoom.addParticipant(owner);
+        chatRoom.registerOwner(owner);
 
         log.info("채팅방 생성 완료: {}, 개설자={}", chatRoom.getName(), owner.getEmail());
     }
@@ -40,10 +40,13 @@ public class ChatRoomService {
         return chatRoomRepository.findAll().stream().map(ChatRoomResponse::from).toList();
     }
 
+    @Transactional
     public ChatRoomResponse getChatRoom(Long chatRoomId, User user) {
+
         ChatRoom chatRoom = chatRoomRepository.findWithParticipantsById(chatRoomId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."));
-        chatRoom.addParticipant(user);
+
+        chatRoom.addOrActivateMember(user);
         return ChatRoomResponse.from(chatRoom);
     }
 

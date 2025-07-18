@@ -33,9 +33,28 @@ public class ChatRoom {
     @JoinColumn(name = "OWNER_ID")
     private User owner;
 
-    public void addParticipant(User user) {
-        ChatRoomParticipant participant = ChatRoomParticipant.create(this, user);
-        participants.add(participant);
+    public void registerOwner(User user) {
+        ChatRoomParticipant owner = ChatRoomParticipant.create(this, user, ChatRoomParticipantRole.OWNER);
+        participants.add(owner);
     }
+
+    public void addOrActivateMember(User user) {
+        ChatRoomParticipant existing = participants.stream()
+                .filter(p -> p.getUser().getId().equals(user.getId()))
+                .findFirst()
+                .orElse(null);
+
+        if (existing != null) {
+            if (existing.isActive()) {
+                return;
+            }
+            existing.activate();
+        } else {
+            ChatRoomParticipant newParticipant = ChatRoomParticipant.create(
+                    this, user, ChatRoomParticipantRole.MEMBER);
+            participants.add(newParticipant);
+        }
+    }
+
 
 }

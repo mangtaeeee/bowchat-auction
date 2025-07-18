@@ -23,18 +23,22 @@ public class ChatRoomParticipant {
     @JoinColumn(name = "user_id")
     private User user;
 
-    private String role;
+    @Enumerated(EnumType.STRING)
+    private ChatRoomParticipantRole role; // 채팅방 참여자의 역할 (예: OWNER, MEMBER 등)
     private boolean isActive; // 현재 채팅방 참여 여부
     private Long lastReadMessageId;
 
 
-    public static ChatRoomParticipant create(ChatRoom chatRoom, User user) {
+    public static ChatRoomParticipant create(ChatRoom chatRoom, User user, ChatRoomParticipantRole role) {
         return ChatRoomParticipant.builder()
                 .chatRoom(chatRoom)
                 .user(user)
-                .role("OWNER") // 기본 역할은 OWNER 설정
+                .role(role)
                 .isActive(true) // 새로 참여할 때는 활성 상태로 설정
                 .lastReadMessageId(0L) // 처음 참여 시 읽은 메시지가 없으므로 0으로 초기화
                 .build();
+    }
+    public void activate() {
+        this.isActive = true; // 참여 상태를 활성화
     }
 }
