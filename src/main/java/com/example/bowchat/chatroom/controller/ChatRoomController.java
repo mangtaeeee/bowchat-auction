@@ -42,5 +42,13 @@ public class ChatRoomController {
         return ResponseEntity.ok(chatRoomService.getChatRoom(roomId,principalDetails.getUser()));
     }
 
+    @PostMapping("/{roomId}/leave")
+    public ResponseEntity<Void> leaveChatRoom(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal PrincipalDetails principalDetails) {
+        chatRoomService.leaveChatRoom(roomId, principalDetails.getUser());
+        return ResponseEntity.ok().build();
+    }
+
 
 }

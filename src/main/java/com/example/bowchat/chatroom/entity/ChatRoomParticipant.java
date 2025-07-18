@@ -41,4 +41,7 @@ public class ChatRoomParticipant {
     public void activate() {
         this.isActive = true; // 참여 상태를 활성화
     }
+    public void deactivate() {
+        this.isActive = false; // 참여 상태를 비활성화
+    }
 }
