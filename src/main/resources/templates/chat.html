@@ -209,6 +209,7 @@
 
         const sender = localStorage.getItem("userEmail");
         const message = document.getElementById("message").value;
+        const messageInput = document.getElementById("message");
 
         if (!roomId || !sender || !message) {
             alert("메시지 내용을 입력하세요.");
@@ -222,6 +223,7 @@
         };
 
         stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+        messageInput.value = "";
     }
 
     function showMessage(message) {

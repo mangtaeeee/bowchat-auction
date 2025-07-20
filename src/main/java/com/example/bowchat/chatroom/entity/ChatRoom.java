@@ -44,12 +44,14 @@ public class ChatRoom {
                 .findFirst()
                 .orElse(null);
 
+        //입장내역은 있지만 비활성화 회원의 경우
         if (existing != null) {
             if (existing.isActive()) {
                 return;
             }
             existing.activate();
         } else {
+            // 입장 내역이 없는 회원의 경우
             ChatRoomParticipant newParticipant = ChatRoomParticipant.create(
                     this, user, ChatRoomParticipantRole.MEMBER);
             participants.add(newParticipant);
