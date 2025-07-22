@@ -1,6 +1,5 @@
 package com.example.bowchat.websocket;
 
-import com.example.bowchat.chatmessage.entity.MessageType;
 import com.example.bowchat.kafka.ChatEvent;
 import com.example.bowchat.kafka.ChatProducer;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,7 +11,6 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -51,15 +49,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             // 클라이언트 메시지를 ChatEvent로 매핑
             ChatEvent chatEvent = objectMapper.readValue(message.getPayload(), ChatEvent.class);
 
-            // timestamp 추가
-            ChatEvent enrichedEvent = new ChatEvent(
-                    roomId,
-                    chatEvent.senderId(),
-                    chatEvent.senderName(),
-                    MessageType.CHAT,
-                    chatEvent.payload(),
-                    Instant.now().toEpochMilli()
-            );
+            ChatEvent enrichedEvent = ChatEvent.enrichChatEvent(roomId, chatEvent);
 
             kafkaProducer.send(enrichedEvent);
             log.info("Kafka에 메시지 전송 완료: {}", enrichedEvent);

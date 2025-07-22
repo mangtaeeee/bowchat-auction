@@ -6,14 +6,14 @@ import lombok.Builder;
 
 @Builder
 public record ChatResponse(
-        String sender,
+        String senderName,
         String content,
         MessageType type, // CHAT, JOIN, LEAVE
         long timestamp
 ) {
     public static ChatResponse from(ChatMessage entity) {
         return ChatResponse.builder()
-                .sender(entity.getSenderName())
+                .senderName(entity.getSenderName())
                 .content(entity.getContent())
                 .type(entity.getMessageType())
                 .timestamp(entity.getTimestamp())

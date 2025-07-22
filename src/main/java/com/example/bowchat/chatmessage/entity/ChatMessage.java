@@ -38,7 +38,7 @@ public class ChatMessage {
                 .roomId(event.roomId())
                 .senderId(event.senderId())
                 .senderName(event.senderName())
-                .content(event.payload())
+                .content(event.content())
                 .messageType(event.type())
                 .createDate(LocalDateTime.ofInstant(
                         Instant.ofEpochMilli(event.timestamp()),
