@@ -1,307 +1,220 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>WebSocket Chat</title>
-    <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
-</head>
-<body>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Kafka WebSocket Chat</title>
+    </head>
+    <body>
 
-<h2>WebSocket Chat</h2>
-<button onclick="logout()">로그아웃</button>
-<!-- 채팅방 생성 -->
-<div>
-    <label>새 채팅방 이름:</label>
-    <input type="text" id="newRoomName" placeholder="채팅방 이름 입력">
-    <button onclick="createChatRoom()">채팅방 생성</button>
-</div>
+    <h2>WebSocket Chat</h2>
+    <button onclick="logout()">로그아웃</button>
+    <!-- 채팅방 생성 -->
+    <div>
+        <label>새 채팅방 이름:</label>
+        <input type="text" id="newRoomName" placeholder="채팅방 이름 입력">
+        <button onclick="createChatRoom()">채팅방 생성</button>
+    </div>
 
-<!-- 채팅방 목록 -->
-<h3>채팅방 목록</h3>
-<div id="chatRooms"></div>
+    <!-- 채팅방 목록 -->
+    <h3>채팅방 목록</h3>
+    <div id="chatRooms"></div>
 
-<!-- 채팅방 입장 -->
-<h3>채팅방 입장</h3>
-<div>
-    <label>채팅방 ID:</label>
-    <input type="text" id="roomId" placeholder="roomId 입력">
-    <button onclick="connect()">연결</button>
-    <button onclick="disconnect()">연결 해제</button>
-</div>
+    <!-- 채팅방 입장 -->
+    <h3>채팅방 입장</h3>
+    <div>
+        <label>채팅방 ID:</label>
+        <input type="text" id="roomId" placeholder="roomId 입력">
+        <button onclick="connect()">연결</button>
+        <button onclick="disconnect()">연결 해제</button>
+    </div>
 
-<!-- 메시지 입력 -->
-<div>
-    <label>메시지:</label>
-    <input type="text" id="message" placeholder="메시지 입력">
-    <button onclick="sendMessage()">전송</button>
-</div>
+    <!-- 메시지 입력 -->
+    <div>
+        <label>메시지:</label>
+        <input type="text" id="message" placeholder="메시지 입력">
+        <button onclick="sendMessage()">전송</button>
+    </div>
 
-<!-- 채팅 로그 -->
-<h3>채팅 로그</h3> <!-- 채팅방 퇴장 버튼 -->
-<button onclick="leaveChatRoom()">채팅방 퇴장</button>
-<div id="chat" style="border: 1px solid #ccc; padding: 10px; min-height: 200px;"></div>
+    <!-- 채팅 로그 -->
+    <h3>채팅 로그</h3>
+    <button onclick="leaveChatRoom()">채팅방 퇴장</button>
+    <div id="chat" style="border: 1px solid #ccc; padding: 10px; min-height: 200px;"></div>
 
-<script>
-    let stompClient = null;
-    let roomId = null;
-    let isRoomValid = false;
-    let subscription = null;
+    <script>
+        let socket = null;
+        let roomId = null;
 
-    function createChatRoom() {
-        const token = localStorage.getItem('jwtToken');
-        if (!token) {
-            alert('로그인이 필요합니다.');
-            window.location.href = '/login';
-            return;
-        }
-
-        const chatRoomName = document.getElementById("newRoomName").value;
-        if (!chatRoomName) {
-            alert("채팅방 이름을 입력하세요.");
-            return;
-        }
-
-        fetch("/chat/rooms", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify({ chatRoomName })
-        })
-            .then(response => {
-                if (response.status === 401 || response.status === 403) {
-                    alert("로그인이 만료되었습니다.");
-                    localStorage.clear();
-                    window.location.href = '/login';
-                    return;
-                }
-                if (response.ok) {
-                    alert("채팅방이 생성되었습니다.");
-                    loadChatRooms();
-                } else {
-                    alert("채팅방 생성 실패.");
-                }
-            });
-    }
-
-    function loadChatRooms() {
-        const token = localStorage.getItem('jwtToken');
-        if (!token) {
-            alert('로그인이 필요합니다.');
-            window.location.href = '/login';
-            return;
-        }
-
-        fetch("/chat/rooms", {
-            headers: { "Authorization": `Bearer ${token}` }
-        })
-            .then(response => {
-                if (response.status === 401 || response.status === 403) {
-                    alert("로그인이 만료되었습니다.");
-                    localStorage.clear();
-                    window.location.href = '/login';
-                    return;
-                }
-                return response.json();
-            })
-            .then(data => {
-                const chatRoomsDiv = document.getElementById("chatRooms");
-                chatRoomsDiv.innerHTML = "";
-                data.forEach(room => {
-                    let roomElement = document.createElement("p");
-                    roomElement.innerHTML = `<b>${room.roomId}</b>: ${room.roomName}
-                    <button onclick="joinRoom(${room.roomId})">입장</button>`;
-                    chatRoomsDiv.appendChild(roomElement);
-                });
-            });
-    }
-
-    function joinRoom(selectedRoomId) {
-        const token = localStorage.getItem('jwtToken');
-        fetch(`/chat/rooms/${selectedRoomId}`, {
-            headers: {"Authorization": `Bearer ${token}`}
-        })
-            .then(response => {
-                if (response.status === 401 || response.status === 403) {
-                    alert("로그인이 만료되었습니다.");
-                    localStorage.clear();
-                    window.location.href = '/login';
-                    return;
-                }
-                if (!response.ok) {
-                    alert("채팅방 정보 조회 실패.");
-                    return;
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log("채팅방 정보:", data); // 디버깅용
-                document.getElementById("roomId").value = selectedRoomId;
-                loadPreviousMessages(selectedRoomId);
-                connect();
-            });
-    }
-
-    function loadPreviousMessages(roomId) {
-        const token = localStorage.getItem('jwtToken');
-        fetch(`/chat/messages/${roomId}`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        })
-            .then(response => response.json())
-            .then(messages => {
-                const chatDiv = document.getElementById("chat");
-                chatDiv.innerHTML = '';
-                messages.forEach(message => showMessage(message));
-            });
-    }
-
-    function connect() {
-        roomId = document.getElementById("roomId").value;
-        fetch(`/chat/rooms/${roomId}`)
-            .then(response => {
-                if (response.status === 404) {
-                    alert("채팅방이 존재하지 않습니다.");
-                    isRoomValid = false;
-                    return;
-                }
-                isRoomValid = true;
-                openWebSocket();
-            });
-    }
-
-    function openWebSocket() {
-        const chatDiv = document.getElementById("chat");
-        chatDiv.innerHTML = '';
-        if (stompClient !== null && stompClient.connected) disconnect();
-
-        const token = localStorage.getItem('jwtToken');
-        const socket = new SockJS('/ws/chat?token=' + token); // ✅ 쿼리 파라미터에 토큰 붙임
-        stompClient = Stomp.over(socket);
-
-        stompClient.connect({}, function (frame) {
-            if (subscription !== null) subscription.unsubscribe();
-            subscription = stompClient.subscribe('/topic/chat/' + roomId, function (message) {
-                const messageBody = JSON.parse(message.body);
-                console.log("📩 수신된 메시지:", messageBody);
-                console.log("roomId 비교:", messageBody.roomId, roomId);
-                if (String(messageBody.roomId) === String(roomId)) {
-                    showMessage(messageBody);
-                }
-            });
-        });
-    }
-
-    function disconnect() {
-        if (stompClient !== null) stompClient.disconnect();
-        if (subscription !== null) {
-            subscription.unsubscribe();
-            subscription = null;
-        }
-    }
-
-    function sendMessage() {
-        if (!isRoomValid) {
-            alert("유효하지 않은 채팅방입니다.");
-            return;
-        }
-
-        const sender = localStorage.getItem("userEmail");
-        const message = document.getElementById("message").value;
-        const messageInput = document.getElementById("message");
-
-        if (!roomId || !sender || !message) {
-            alert("메시지 내용을 입력하세요.");
-            return;
-        }
-
-        const chatMessage = {
-            roomId: roomId,
-            sender: sender,
-            message: message
-        };
-
-        stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
-        messageInput.value = "";
-    }
-
-    function showMessage(message) {
-        const chatDiv = document.getElementById("chat");
-        const newMessage = document.createElement("p");
-        newMessage.textContent = message.sender + ": " + message.message;
-        chatDiv.appendChild(newMessage);
-    }
-    function logout() {
-        localStorage.removeItem("jwtToken");
-        localStorage.removeItem("userEmail");
-        alert("로그아웃 되었습니다.");
-        window.location.href = "/login";
-    }
-    function leaveChatRoom() {
-        const token = localStorage.getItem('jwtToken');
-        if (!roomId || !token) {
-            alert("채팅방에 입장하지 않았습니다.");
-            return;
-        }
-
-        fetch(`/chat/rooms/${roomId}/leave`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${token}`
+        function createChatRoom() {
+            const token = localStorage.getItem('jwtToken');
+            if (!token) {
+                alert('로그인이 필요합니다.');
+                window.location.href = '/login';
+                return;
             }
-        })
-            .then(response => {
-                if (response.ok) {
-                    alert("채팅방에서 퇴장했습니다.");
-                    disconnect(); // ✅ WebSocket 연결 해제
-                    clearChatLog(); // ✅ 채팅 로그 초기화
-                    loadChatRooms(); // 채팅방 목록 새로고침
-                } else {
-                    alert("채팅방 퇴장 실패");
-                }
-            });
-    }
 
-    function clearChatLog() {
-        const chatDiv = document.getElementById("chat");
-        chatDiv.innerHTML = ''; // ✅ 채팅 로그 비우기
-    }
+            const chatRoomName = document.getElementById("newRoomName").value;
+            if (!chatRoomName) {
+                alert("채팅방 이름을 입력하세요.");
+                return;
+            }
 
-    window.onload = function () {
-        // 1. 먼저 토큰 파싱
-        const params = new URLSearchParams(window.location.search);
-        const token = params.get("token");
+            fetch("/chat/rooms", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ chatRoomName })
+            })
+                .then(response => response.ok ? alert("채팅방 생성 완료") : alert("채팅방 생성 실패"))
+                .then(loadChatRooms);
+        }
 
-        if (token) {
-            try {
+        function loadChatRooms() {
+            const token = localStorage.getItem('jwtToken');
+            fetch("/chat/rooms", {
+                headers: {"Authorization": `Bearer ${token}`}
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const chatRoomsDiv = document.getElementById("chatRooms");
+                    chatRoomsDiv.innerHTML = "";
+                    data.forEach(room => {
+                        let roomElement = document.createElement("p");
+                        roomElement.innerHTML = `<b>${room.roomId}</b>: ${room.roomName}
+                        <button onclick="joinRoom(${room.roomId})">입장</button>`;
+                        chatRoomsDiv.appendChild(roomElement);
+                    });
+                });
+        }
+
+        function joinRoom(selectedRoomId) {
+            document.getElementById("roomId").value = selectedRoomId;
+            loadPreviousMessages(selectedRoomId);
+            connect();
+        }
+
+        function loadPreviousMessages(roomId) {
+            const token = localStorage.getItem('jwtToken');
+            fetch(`/chat/messages/${roomId}`, {
+                headers: {"Authorization": `Bearer ${token}`}
+            })
+                .then(response => response.json())
+                .then(messages => {
+                    const chatDiv = document.getElementById("chat");
+                    chatDiv.innerHTML = '';
+                    messages.forEach(showMessage);
+                });
+        }
+
+        function connect() {
+            if (socket !== null && socket.readyState === WebSocket.OPEN) {
+                socket.close();
+            }
+
+            const token = localStorage.getItem('jwtToken');
+            roomId = document.getElementById("roomId").value;
+
+            socket = new WebSocket("ws://localhost:8080/ws/chat?token=" + token + "&roomId=" + roomId);
+
+            socket.onopen = () => {
+                console.log("WebSocket 연결 성공");
+            };
+
+            socket.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                console.log("📩 받은 메시지:", message);
+                showMessage(message);
+            };
+
+            socket.onclose = () => {
+                console.log("WebSocket 연결 종료");
+            };
+
+            socket.onerror = (error) => {
+                console.error("WebSocket 오류:", error);
+            };
+        }
+
+        function disconnect() {
+            if (socket !== null) {
+                socket.close();
+            }
+        }
+
+        function sendMessage() {
+            const senderId = localStorage.getItem("userEmail"); // senderId를 이메일로 사용
+            const senderName = localStorage.getItem("userEmail");
+            const messageText = document.getElementById("message").value;
+
+            if (!messageText) {
+                alert("메시지를 입력하세요.");
+                return;
+            }
+
+            const chatMessage = {
+                roomId: roomId,
+                senderId: senderId,
+                senderName: senderName,
+                type: "CHAT",
+                message: messageText
+            };
+
+            socket.send(JSON.stringify(chatMessage));
+            document.getElementById("message").value = '';
+        }
+
+        function showMessage(message) {
+            const chatDiv = document.getElementById("chat");
+            const newMessage = document.createElement("p");
+            newMessage.textContent = `[${message.type}] ${message.sender}: ${message.content}`;
+            chatDiv.appendChild(newMessage);
+        }
+
+        function logout() {
+            localStorage.clear();
+            alert("로그아웃 되었습니다.");
+            window.location.href = "/login";
+        }
+
+        function leaveChatRoom() {
+            const token = localStorage.getItem('jwtToken');
+            if (!roomId) {
+                alert("현재 채팅방에 입장해 있지 않습니다.");
+                return;
+            }
+
+            fetch(`/chat/rooms/${roomId}/leave`, {
+                method: "POST",
+                headers: {"Authorization": `Bearer ${token}`}
+            })
+                .then(response => {
+                    if (response.ok) {
+                        alert("채팅방 퇴장 완료");
+                        disconnect();
+                        clearChatLog();
+                        loadChatRooms();
+                    } else {
+                        alert("채팅방 퇴장 실패");
+                    }
+                });
+        }
+
+        function clearChatLog() {
+            document.getElementById("chat").innerHTML = '';
+        }
+
+        window.onload = () => {
+            const token = new URLSearchParams(window.location.search).get("token");
+            if (token) {
                 localStorage.setItem("jwtToken", token);
                 const payload = JSON.parse(atob(token.split('.')[1]));
-                const email = payload.sub;
-                localStorage.setItem("userEmail", email);
-
-                // URL 정리
-                const url = new URL(window.location);
-                url.searchParams.delete("token");
-                window.history.replaceState({}, document.title, url);
-            } catch (e) {
-                console.error("JWT 처리 오류:", e);
+                localStorage.setItem("userEmail", payload.sub);
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
-        }
+            loadChatRooms();
+        };
+    </script>
 
-        // 2. 토큰 확인 후 채팅방 불러오기
-        const jwt = localStorage.getItem("jwtToken");
-        const userEmail = localStorage.getItem("userEmail");
-
-        if (!jwt || !userEmail) {
-            alert("로그인 후 이용해주세요.");
-            window.location.href = "/login";
-            return;
-        }
-
-        loadChatRooms();
-    };
-</script>
-
-</body>
-</html>
+    </body>
+    </html>

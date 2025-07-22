@@ -20,6 +20,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+
+        // WebSocket 업그레이드 요청은 JWT 검증에서 제외
+        if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade"))) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String token = resolveToken(request);
         if (token != null && jwtProvider.validateToken(token)) {
             SecurityContextHolder.getContext().setAuthentication(jwtProvider.getAuthentication(token));

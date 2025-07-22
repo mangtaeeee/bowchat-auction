@@ -11,3 +11,11 @@ spring:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: false
     open-in-view: false
+  kafka:
+    consumer:
+      properties:
+        spring.json.trusted.packages: com.example.bowchat.kafka,com.example.bowchat.kafka.*,java.util,java.lang
+  web:
+    resources:
+      add-mappings: false
+

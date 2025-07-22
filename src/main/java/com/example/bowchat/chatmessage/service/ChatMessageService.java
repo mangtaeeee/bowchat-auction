@@ -1,11 +1,9 @@
 package com.example.bowchat.chatmessage.service;
 
-import com.example.bowchat.chatmessage.dto.ChatMessageResponse;
-import com.example.bowchat.chatmessage.entity.ChatMessage;
+import com.example.bowchat.chatmessage.dto.ChatResponse;
 import com.example.bowchat.chatmessage.repository.ChatMessageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -15,8 +13,8 @@ public class ChatMessageService {
 
     private final ChatMessageRepository chatMessageRepository;
 
-    public List<ChatMessageResponse> findByChatMessages(Long chatRoomId){
+    public List<ChatResponse> findByChatMessages(Long chatRoomId){
         return chatMessageRepository.findByRoomId(chatRoomId)
-                .stream().map(ChatMessageResponse::from).toList();
+                .stream().map(ChatResponse::from).toList();
     }
 }

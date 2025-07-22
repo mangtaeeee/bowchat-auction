@@ -1,8 +1,6 @@
 package com.example.bowchat.chatmessage.controller;
 
-import com.example.bowchat.chatmessage.dto.ChatMessageResponse;
-import com.example.bowchat.chatmessage.entity.ChatMessage;
-import com.example.bowchat.chatmessage.repository.ChatMessageRepository;
+import com.example.bowchat.chatmessage.dto.ChatResponse;
 import com.example.bowchat.chatmessage.service.ChatMessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +18,8 @@ public class ChatMessageController {
     private final ChatMessageService chatMessageService;
 
     @GetMapping("/{roomId}")
-    public ResponseEntity<List<ChatMessageResponse>> getMessages(@PathVariable Long roomId) {
-        List<ChatMessageResponse> messages = chatMessageService.findByChatMessages(roomId);
+    public ResponseEntity<List<ChatResponse>> getMessages(@PathVariable Long roomId) {
+        List<ChatResponse> messages = chatMessageService.findByChatMessages(roomId);
         return ResponseEntity.ok(messages);
     }
 }
