@@ -88,25 +88,28 @@ src/main/java/com/example/bowchat
 
 ```bash
 # chat-message 토픽 (일반 채팅)
-kafka-topics.sh --create \
+docker exec -it kafka bash -c \
+  "/usr/bin/kafka-topics --create \
   --bootstrap-server localhost:9092 \
   --replication-factor 1 \
   --partitions 3 \
-  --topic chat-message
+  --topic chat-message"
 
 # chat-event 토픽 (입장/퇴장, 시스템 알림)
-kafka-topics.sh --create \
+docker exec -it kafka bash -c \
+  "/usr/bin/kafka-topics --create \
   --bootstrap-server localhost:9092 \
   --replication-factor 1 \
   --partitions 3 \
-  --topic chat-event
+  --topic chat-event"
 
 # auction-bid 토픽 (경매 입찰/낙찰)
-kafka-topics.sh --create \
+docker exec -it kafka bash -c \
+  "/usr/bin/kafka-topics --create \
   --bootstrap-server localhost:9092 \
   --replication-factor 1 \
   --partitions 3 \
-  --topic auction-bid
+  --topic auction-bid"
 ---
 
 ## 로컬 개발환경 (Docker Compose)
