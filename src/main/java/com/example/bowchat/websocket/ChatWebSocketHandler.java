@@ -44,7 +44,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) {
         try {
             Long roomId = extractRoomId(session);
-            log.info("WebSocket 수신 메시지: {}", message.getPayload());
 
             // 클라이언트 메시지를 ChatEvent로 매핑
             ChatEvent chatEvent = objectMapper.readValue(message.getPayload(), ChatEvent.class);

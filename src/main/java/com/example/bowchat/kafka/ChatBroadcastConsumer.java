@@ -11,7 +11,7 @@ public class ChatBroadcastConsumer {
 
     private final WebSocketSessionManager sessionManager;
 
-    @KafkaListener(topics = "chat-topic", groupId = "chat-broadcast-group")
+    @KafkaListener(topics = "chat-message", groupId = "chat-broadcast-group")
     public void broadcast(ChatEvent chatEvent) {
         sessionManager.broadcast(chatEvent.roomId(), chatEvent);
     }

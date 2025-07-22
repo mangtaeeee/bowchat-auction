@@ -15,6 +15,8 @@ spring:
     consumer:
       properties:
         spring.json.trusted.packages: com.example.bowchat.kafka,com.example.bowchat.kafka.*,java.util,java.lang
+    admin:
+      auto-create: false
   web:
     resources:
       add-mappings: false

@@ -15,7 +15,7 @@ public class ChatSaveConsumer {
 
     private final ChatMessageRepository chatMessageRepository;
 
-    @KafkaListener(topics = "chat-topic", groupId = "chat-save-group")
+    @KafkaListener(topics = "chat-message", groupId = "chat-save-group")
     @Transactional
     public void save(ChatEvent chatEvent) {
         ChatMessage chatMessage = ChatMessage.from(chatEvent);
