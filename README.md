@@ -84,9 +84,35 @@ src/main/java/com/example/bowchat
 | `chat-event`    | `ENTER`, `LEAVE`, `SYSTEM`    | EventConsumer          |
 | `auction-bid`   | `AUCTION_BID`, `AUCTION_END`  | BidConsumer            |
 
+### 🛠 Kafka Topic 생성 명령어
+
+```bash
+# chat-message 토픽 (일반 채팅)
+docker exec -it kafka bash -c \
+  "/usr/bin/kafka-topics --create \
+  --bootstrap-server localhost:9092 \
+  --replication-factor 1 \
+  --partitions 3 \
+  --topic chat-message"
+
+# chat-event 토픽 (입장/퇴장, 시스템 알림)
+docker exec -it kafka bash -c \
+  "/usr/bin/kafka-topics --create \
+  --bootstrap-server localhost:9092 \
+  --replication-factor 1 \
+  --partitions 3 \
+  --topic chat-event"
+
+# auction-bid 토픽 (경매 입찰/낙찰)
+docker exec -it kafka bash -c \
+  "/usr/bin/kafka-topics --create \
+  --bootstrap-server localhost:9092 \
+  --replication-factor 1 \
+  --partitions 3 \
+  --topic auction-bid"
 ---
 
-## 🚀 로컬 개발환경 (Docker Compose)
+## 로컬 개발환경 (Docker Compose)
 
 ### 사전 준비
 - Docker
