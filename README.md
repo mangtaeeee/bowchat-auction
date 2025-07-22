@@ -1,5 +1,5 @@
 
-# BowChat - SNS 회원가입 채팅
+# BowChat - SNS 기반 실시간 채팅을 통한 경매 
 
 ![Java](https://img.shields.io/badge/Java-17-007396?logo=java&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?logo=springboot)
@@ -11,19 +11,25 @@
 
 ---
 
-Spring Boot, MongoDB, Kafka, Redis, WebSocket 기반의 **실시간 채팅 애플리케이션**입니다.  
-JWT 기반 인증과 OAuth2 소셜 로그인(Google, Kakao, Naver)을 지원하며, 사용자 관리 및 채팅방 관리 기능을 제공합니다.  
-대규모 트래픽 대응을 위해 Kafka 메시지 브로커와 Redis 캐시를 적용했습니다.
+Spring Boot, Kafka, MongoDB, Redis, WebSocket 기반의 **SNS 로그인 기반 실시간 채팅 및 경매 애플리케이션**입니다.  
+JWT 기반 인증과 OAuth2 소셜 로그인(Google, Kakao, Naver)을 지원하며, Kafka Topic 분리 설계로 채팅/이벤트/경매 메시지를 독립적으로 처리합니다.  
+Redis 캐시를 통해 세션 관리 최적화를 구현했습니다.
 
 ---
 
-## 시스템 아키텍처
+## 🏗 시스템 아키텍처
 
-
-> **설계 포인트**
-> - WebSocket(STOMP) + Kafka 메시지 브로커 + Redis 캐싱
-> - 인증 흐름: OAuth2 → JWT 발급 → Redis RefreshToken 관리
-> - 채팅 메시지 MongoDB 저장 및 H2로 채팅방 관리
+- WebSocket(STOMP) + Kafka 메시지 브로커 + Redis 세션 캐싱
+- 메시지 처리 구조:
+  ```
+  Client → WebSocket → Kafka Producer
+                  ↳ chat-message → SaveConsumer, BroadcastConsumer
+                  ↳ chat-event   → EventConsumer
+                  ↳ auction-bid  → BidConsumer
+  ```
+- 인증 흐름: OAuth2 → JWT 발급 → Redis RefreshToken 관리
+- MongoDB를 채팅 로그 저장소로 활용, RDB는 메타데이터 관리에 사용 예정
+- Topic 및 Consumer 그룹 설계로 고부하 상황에서도 안정적 메시지 처리
 
 ---
 
@@ -31,16 +37,17 @@ JWT 기반 인증과 OAuth2 소셜 로그인(Google, Kakao, Naver)을 지원하�
 
 - JWT 기반 회원가입/로그인
 - OAuth2 소셜 로그인 (Google, Kakao, Naver)
+- Kafka Pub-Sub 기반 메시지 브로커
 - WebSocket 실시간 채팅
-- Kafka 비동기 메시지 처리
 - MongoDB 채팅 로그 저장
-- Redis 캐시를 통한 세션 관리
-- Swagger API 문서 제공
-- Docker Compose 개발환경 제공
+- Redis 세션/토큰 캐시
+- 채팅방 입장/퇴장 이벤트 처리 자동화
+- 경매 메시지(AUCTION_BID, AUCTION_END) Topic 분리 및 낙찰 처리 준비
+- Docker Compose 기반 개발 환경 제공
 
 ---
 
-## 기술 스택
+## 📦 기술 스택
 
 | 구분          | 기술                          |
 |---------------|---------------------------------|
@@ -53,27 +60,33 @@ JWT 기반 인증과 OAuth2 소셜 로그인(Google, Kakao, Naver)을 지원하�
 
 ---
 
-## 프로젝트 구조
+## 📁 프로젝트 구조
 
 ```
 src/main/java/com/example/bowchat
 ├── auth                # 인증 도메인 (JWT + OAuth2)
-│   ├── controller
-│   ├── dto
-│   ├── jwt
-│   ├── oauth
-│   ├── repository
-│   └── service
-├── chatmessage         # 채팅 메시지 도메인
+├── chatmessage         # 채팅 메시지 도메인 (Kafka Consumer)
 ├── chatroom            # 채팅방 도메인
-├── config              # 보안/캐시/웹소켓 설정
-├── global              # 글로벌 공통 처리 (예외, 유틸)
+├── kafka               # Kafka Producer/Consumer/Config
+├── websocket           # WebSocket 핸들러 및 세션 관리
+├── config              # 보안/캐시/Kafka/WebSocket 설정
+├── global              # 공통 처리 (예외, 유틸)
 └── BowchatApplication  # 메인 애플리케이션
 ```
 
 ---
 
-## 로컬 개발환경 (Docker Compose)
+## ⚙️ Kafka Topic 설계
+
+| Topic 이름      | 메시지 타입                  | Consumer               |
+|-----------------|-------------------------------|------------------------|
+| `chat-message`  | `CHAT`, `FILE`                | SaveConsumer, BroadcastConsumer |
+| `chat-event`    | `ENTER`, `LEAVE`, `SYSTEM`    | EventConsumer          |
+| `auction-bid`   | `AUCTION_BID`, `AUCTION_END`  | BidConsumer            |
+
+---
+
+## 🚀 로컬 개발환경 (Docker Compose)
 
 ### 사전 준비
 - Docker
@@ -81,71 +94,34 @@ src/main/java/com/example/bowchat
 - Java 17
 - Gradle 8.x
 
----
-
-### Docker Compose 실행
-
-1. 루트 디렉토리에 `docker-compose.yml` 파일 생성:
-```yaml
-version: '3.8'
-
-services:
-  mongodb:
-    image: mongo:7.0
-    container_name: bowchat-mongo
-    ports:
-      - "27017:27017"
-    volumes:
-      - ./data/mongo:/data/db
-
-  kafka:
-    image: bitnami/kafka:3.5
-    container_name: bowchat-kafka
-    ports:
-      - "9092:9092"
-    environment:
-      - KAFKA_BROKER_ID=1
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
-    depends_on:
-      - zookeeper
-
-  zookeeper:
-    image: bitnami/zookeeper:3.8
-    container_name: bowchat-zookeeper
-    ports:
-      - "2181:2181"
-
-  redis:
-    image: redis:7
-    container_name: bowchat-redis
-    ports:
-      - "6379:6379"
-```
-
-2. 실행:
-```bash
-docker-compose up -d
-```
+### 실행
+1. Docker Compose 실행
+    ```bash
+    docker-compose up -d
+    ```
+2. Spring Boot 실행 (Active Profile: `dev`)
 
 ---
 
-### 환경 변수 설정
-루트에 `.env` 파일 생성:
+### 환경 변수 (.env)
 ```
 JWT_SECRET=your_jwt_secret_key
 OAUTH_CLIENT_ID=your_client_id
 OAUTH_CLIENT_SECRET=your_client_secret
+MONGODB_URI=mongodb://localhost:27017/chatdb
+REDIS_HOST=localhost
 ```
 
 ---
 
-## API 문서
+## 📑 API 문서
 Swagger UI: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 
 ---
 
-## 향후 계획
-- AWS EC2 배포 및 S3 연동
+## 🗺 향후 계획
+
+- 경매 기능 완성 (입찰 처리 및 낙찰 브로드캐스트)
+- AWS EC2 배포 및 S3 이미지 업로드
 - GitHub Actions 기반 CI/CD 파이프라인 구축
-- Prometheus + Grafana 모니터링 추가
+- Prometheus + Grafana 모니터링
