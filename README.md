@@ -49,7 +49,6 @@ JWT 기반 인증과 OAuth2 소셜 로그인(Google, Kakao, Naver)을 지원하�
 | Database      | MongoDB, H2 (메모리 DB)        |
 | Message Queue | Apache Kafka                   |
 | Cache         | Redis                          |
-| Protocol      | WebSocket (STOMP)              |
 | DevOps        | Docker, Docker Compose         |
 
 ---
