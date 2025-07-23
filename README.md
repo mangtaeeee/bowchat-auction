@@ -12,8 +12,8 @@
 ---
 
 Spring Boot, Kafka, MongoDB, Redis, WebSocket 기반의 **SNS 로그인 기반 실시간 채팅 및 경매 애플리케이션**입니다.  
-JWT 기반 인증과 OAuth2 소셜 로그인(Google, Kakao, Naver)을 지원하며, Kafka Topic 분리 설계로 채팅/이벤트/경매 메시지를 독립적으로 처리합니다.  
-Redis 캐시를 통해 세션 관리 최적화를 구현했습니다.
+JWT 기반 인증과 OAuth2 소셜 로그인(Google, Kakao, Naver)을 지원하며, Kafka Topic 분리 설계로 채팅/이벤트/경매 메시지를 독립적으로 처리
+Redis 캐시를 통해 세션 관리 최적화를 구현
 
 ---
 
@@ -83,6 +83,8 @@ src/main/java/com/example/bowchat
 | `chat-message`  | `CHAT`, `FILE`                | SaveConsumer, BroadcastConsumer |
 | `chat-event`    | `ENTER`, `LEAVE`, `SYSTEM`    | EventConsumer          |
 | `auction-bid`   | `AUCTION_BID`, `AUCTION_END`  | BidConsumer            |
+
+Kafka 토픽을 메시지 유형별로 분리해 각 Consumer 그룹이 필요한 데이터만 처리하도록 해서 부하 분산, 장애 격리, 그리고 경매 같은 실시간 처리의 지연을 최소화했습니다.
 
 ### 🛠 Kafka Topic 생성 명령어
 
