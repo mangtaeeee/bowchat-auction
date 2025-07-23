@@ -89,9 +89,24 @@
         }
 
         function joinRoom(selectedRoomId) {
-            document.getElementById("roomId").value = selectedRoomId;
-            loadPreviousMessages(selectedRoomId);
-            connect();
+            const token = localStorage.getItem('jwtToken');
+
+            fetch(`/chat/rooms/${selectedRoomId}`, {
+                headers: {"Authorization": `Bearer ${token}`}
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error("채팅방 입장 실패");
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("채팅방 입장 성공:", data);
+                    document.getElementById("roomId").value = selectedRoomId;
+                    loadPreviousMessages(selectedRoomId); // 과거 메시지 불러오기
+                    connect(); // WebSocket 연결
+                })
+                .catch(err => {
+                    alert("채팅방 입장 실패: " + err.message);
+                });
         }
 
         function loadPreviousMessages(roomId) {

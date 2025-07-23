@@ -20,7 +20,6 @@ public class ChatMessageController {
     @GetMapping("/{roomId}")
     public ResponseEntity<List<ChatResponse>> getMessages(@PathVariable Long roomId) {
         List<ChatResponse> messages = chatMessageService.findByChatMessages(roomId);
-        System.out.println("messages = " + messages);
         return ResponseEntity.ok(messages);
     }
 }

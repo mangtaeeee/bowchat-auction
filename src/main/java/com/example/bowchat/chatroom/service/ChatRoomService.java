@@ -44,6 +44,7 @@ public class ChatRoomService {
     @Transactional
     public ChatRoomResponse getChatRoom(Long chatRoomId, User user) {
 
+        System.out.println("여기다 = " );
         ChatRoom chatRoom = chatRoomRepository.findWithParticipantsById(chatRoomId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."));
 
@@ -56,12 +57,15 @@ public class ChatRoomService {
         ChatRoom chatRoom = chatRoomRepository.findWithParticipantsById(chatRoomId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."));
 
-        ChatRoomParticipant participant = chatRoom.getParticipants().stream()
+        List<ChatRoomParticipant> matchingParticipants = chatRoom.getParticipants().stream()
                 .filter(p -> p.getUser().getId().equals(user.getId()))
-                .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "참여자가 아닙니다."));
+                .toList();
 
-        participant.deactivate();
+        if (matchingParticipants.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "참여자가 아닙니다.");
+        }
+
+        matchingParticipants.forEach(ChatRoomParticipant::deactivate);
     }
 
 }
