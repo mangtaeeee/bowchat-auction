@@ -1,6 +1,5 @@
 package com.example.bowchat.kafka;
 
-import com.example.bowchat.chatmessage.entity.MessageType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -23,7 +22,7 @@ public class ChatProducer {
      * @param chatEvent 전송할 채팅 이벤트
      */
     public void send(ChatEvent chatEvent) {
-        String topic = getTopicForMessageType(chatEvent.type());
+        String topic = chatEvent.type().getTopicName();
 
         CompletableFuture<SendResult<String, ChatEvent>> future = kafkaTemplate.send(topic, chatEvent);
         future.whenComplete((stringChatEventSendResult, throwable) ->
@@ -38,14 +37,6 @@ public class ChatProducer {
             }
         });
 
-    }
-
-    private String getTopicForMessageType(MessageType type) {
-        return switch (type) {
-            case AUCTION_BID, AUCTION_END -> "auction-bid";
-            case ENTER, LEAVE, SYSTEM -> "chat-event";
-            default -> "chat-message";
-        };
     }
 
 }
