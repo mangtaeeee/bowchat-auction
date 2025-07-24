@@ -1,5 +1,6 @@
 package com.example.bowchat.chatroom.entity;
 
+import com.example.bowchat.product.entity.Product;
 import com.example.bowchat.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -25,17 +26,29 @@ public class ChatRoom {
 
     private String name;
 
-    @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<ChatRoomParticipant> participants = new ArrayList<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PRODUCT_ID")
+    private Product product;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "OWNER_ID")
     private User owner;
 
+    @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<ChatRoomParticipant> participants = new ArrayList<>();
+
+
     public void registerOwner(User user) {
         ChatRoomParticipant owner = ChatRoomParticipant.create(this, user, ChatRoomParticipantRole.OWNER);
         participants.add(owner);
+    }
+
+    public void deactivateMember(User user) {
+        participants.stream()
+                .filter(p -> p.getUser().getId().equals(user.getId()))
+                .findFirst()
+                .ifPresent(ChatRoomParticipant::deactivate);
     }
 
     public void addOrActivateMember(User user) {
@@ -57,6 +70,4 @@ public class ChatRoom {
             participants.add(newParticipant);
         }
     }
-
-
 }

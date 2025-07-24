@@ -66,6 +66,8 @@ public class ChatRoomService {
 
         matchingParticipants.forEach(ChatRoomParticipant::deactivate);
     }
+
+    //카프카 이벤트를 통해 참여자 활성 처리
     @Transactional
     public void activateParticipant(Long roomId, Long senderId) {
         ChatRoom chatRoom = getChatRoomWithParticipants(roomId);
@@ -74,6 +76,7 @@ public class ChatRoomService {
         chatRoom.addOrActivateMember(user);
     }
 
+    // 카프카 이벤트를 통해 참여자 비활성 처리
     @Transactional
     public void deactivateParticipant(Long roomId, Long senderId) {
         ChatRoom chatRoom = getChatRoomWithParticipants(roomId);
@@ -81,10 +84,7 @@ public class ChatRoomService {
         User user = getUser(senderId);
 
         // 참여자 중 해당 유저를 찾아 비활성화 처리
-        chatRoom.getParticipants().stream().filter(p -> p.getUser().getId().equals(user.getId()))
-                .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "참여자가 아닙니다."))
-                .deactivate();
+        chatRoom.deactivateMember(user);
     }
 
     private ChatRoom getChatRoomWithParticipants(Long roomId) {
