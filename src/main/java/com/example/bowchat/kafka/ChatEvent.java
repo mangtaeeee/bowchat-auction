@@ -9,7 +9,7 @@ import java.time.Instant;
 @Builder
 public record ChatEvent(
         Long roomId,
-        String senderId,
+        Long senderId,
         String senderName,
         MessageType type,
         String content,   // 실제 메시지 내용

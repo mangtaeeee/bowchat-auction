@@ -43,6 +43,7 @@ public class JwtProvider {
     public String generateToken(User user) {
         JwtBuilder builder= Jwts.builder()
                 .setSubject(user.getEmail())
+                .claim("userId", user.getId())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiration()))
                 .signWith(getSigningKey());
 

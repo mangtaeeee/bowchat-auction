@@ -24,7 +24,7 @@ public class ChatMessage {
 
     private Long roomId;
 
-    private String senderId;
+    private Long senderId;
     private String senderName;
     private String content;
 

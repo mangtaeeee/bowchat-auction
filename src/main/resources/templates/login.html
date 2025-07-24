@@ -39,6 +39,7 @@
             const result = await response.json();
             localStorage.setItem('jwtToken', result.accessToken);
             localStorage.setItem('userEmail', email);
+            localStorage.setItem('userId', result.userInfo.id);
             alert('로그인 성공!');
             window.location.href = '/chat';
         } else if (response.status === 401) {

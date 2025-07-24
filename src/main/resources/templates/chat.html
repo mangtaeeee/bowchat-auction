@@ -158,7 +158,7 @@
         }
 
         function sendMessage() {
-            const senderId = localStorage.getItem("userEmail"); // senderId를 이메일로 사용
+            const senderId = localStorage.getItem("userId");
             const senderName = localStorage.getItem("userEmail");
             const messageText = document.getElementById("message").value;
 
@@ -226,6 +226,7 @@
                 localStorage.setItem("jwtToken", token);
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 localStorage.setItem("userEmail", payload.sub);
+                localStorage.setItem("userId", payload.userId);
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
             loadChatRooms();
