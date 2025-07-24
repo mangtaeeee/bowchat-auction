@@ -20,7 +20,7 @@ public record ChatEvent(
                 .roomId(roomId)
                 .senderId(original.senderId())
                 .senderName(original.senderName())
-                .type(MessageType.CHAT)
+                .type(original.type)
                 .content(original.content())
                 .timestamp(Instant.now().toEpochMilli())
                 .build();

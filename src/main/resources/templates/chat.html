@@ -194,26 +194,22 @@
         }
 
         function leaveChatRoom() {
-            const token = localStorage.getItem('jwtToken');
-            if (!roomId) {
-                alert("현재 채팅방에 입장해 있지 않습니다.");
-                return;
-            }
+            if (!roomId) return alert("현재 채팅방에 입장해 있지 않습니다.");
 
-            fetch(`/chat/rooms/${roomId}/leave`, {
-                method: "POST",
-                headers: {"Authorization": `Bearer ${token}`}
-            })
-                .then(response => {
-                    if (response.ok) {
-                        alert("채팅방 퇴장 완료");
-                        disconnect();
-                        clearChatLog();
-                        loadChatRooms();
-                    } else {
-                        alert("채팅방 퇴장 실패");
-                    }
-                });
+            // 1) LEAVE 이벤트 발행 (Kafka → Consumer → DB/브로드캐스트)
+            const leaveEvent = {
+                roomId,
+                senderId: localStorage.getItem("userId"),
+                senderName: localStorage.getItem("userEmail"),
+                type: "LEAVE",
+                content: ""
+            };
+            socket.send(JSON.stringify(leaveEvent));
+
+            // 2) 클라이언트 세션 정리
+            disconnect();      // WebSocket close
+            clearChatLog();    // UI 청소
+            loadChatRooms();   // 방 목록 새로고침
         }
 
         function clearChatLog() {
