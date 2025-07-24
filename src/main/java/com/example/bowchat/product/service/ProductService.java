@@ -2,7 +2,7 @@ package com.example.bowchat.product.service;
 
 import com.example.bowchat.product.dto.ProductCreateDTO;
 import com.example.bowchat.product.entity.Product;
-import com.example.bowchat.product.repository.productRepository;
+import com.example.bowchat.product.repository.ProductRepository;
 import com.example.bowchat.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class ProductService {
 
 
-    private final productRepository productRepository;
+    private final ProductRepository productRepository;
 
     @Transactional
     public void addProduct(ProductCreateDTO dto,  User seller) {
