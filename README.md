@@ -11,9 +11,9 @@
 
 ---
 
-Spring Boot, Kafka, MongoDB, Redis, WebSocket 기반의 **SNS 로그인 기반 실시간 채팅 및 경매 애플리케이션**입니다.  
-JWT 기반 인증과 OAuth2 소셜 로그인(Google, Kakao, Naver)을 지원하며, Kafka Topic 분리 설계로 채팅/이벤트/경매 메시지를 독립적으로 처리
-Redis 캐시를 통해 세션 관리 최적화를 구현
+Spring Boot, jpa, Kafka, MongoDB, Redis, WebSocket 기반의 **SNS 로그인 기반 실시간 채팅 및 경매 애플리케이션**입니다.  
+JWT 기반 인증과 OAuth2 소셜 로그인(Google, Kakao, Naver)을 지원하며, Kafka Topic 분리 설계로 채팅/이벤트/경매 메시지를 독립적으로 처리하고 
+Redis 캐시를 통해 세션 관리 최적화를 구현했습니다.
 
 ---
 
