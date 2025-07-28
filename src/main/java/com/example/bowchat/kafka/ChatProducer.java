@@ -16,11 +16,7 @@ public class ChatProducer {
 
     private final KafkaTemplate<String, ChatEvent> kafkaTemplate;
 
-    /**
-     * 채팅 이벤트를 카프카 토픽에 전송하는 메서드
-     *
-     * @param chatEvent 전송할 채팅 이벤트
-     */
+    // Kafka에 채팅 이벤트를 전송하는 메서드
     public void send(ChatEvent chatEvent) {
         String topic = chatEvent.type().getTopicName();
 

@@ -8,13 +8,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
-// Kafka 메시지를 수신하여 채팅 메시지를 저장하는 서비스
+
 @Service
 @RequiredArgsConstructor
 public class ChatSaveConsumer {
 
     private final ChatMessageRepository chatMessageRepository;
 
+    // Kafka 메시지를 수신하여 채팅 메시지를 저장하는 서비스
     @KafkaListener(topics = "chat-message", groupId = "chat-save-group")
     @Transactional
     public void save(ChatEvent chatEvent) {

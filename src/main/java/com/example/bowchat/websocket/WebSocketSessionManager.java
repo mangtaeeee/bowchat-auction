@@ -34,8 +34,8 @@ public class WebSocketSessionManager {
         }
     }
 
-    public void broadcast(Long roomId, ChatEvent chatEvent) {
-        List<WebSocketSession> sessions = sessionsByRoom.get(roomId);
+    public void broadcast(ChatEvent chatEvent) {
+        List<WebSocketSession> sessions = sessionsByRoom.get(chatEvent.roomId());
         if (sessions != null) {
             for (WebSocketSession session : sessions) {
                 try {
