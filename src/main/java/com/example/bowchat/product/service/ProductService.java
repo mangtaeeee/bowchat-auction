@@ -1,6 +1,7 @@
 package com.example.bowchat.product.service;
 
 import com.example.bowchat.product.dto.ProductCreateDTO;
+import com.example.bowchat.product.dto.ProductResponse;
 import com.example.bowchat.product.entity.Product;
 import com.example.bowchat.product.repository.ProductRepository;
 import com.example.bowchat.user.entity.User;
@@ -10,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +24,7 @@ public class ProductService {
     private final ProductRepository productRepository;
 
     @Transactional
-    public void addProduct(ProductCreateDTO dto,  User seller) {
+    public Long addProduct(ProductCreateDTO dto,  User seller) {
         log.info("상품 추가: 이름={}, 설명={}", dto.name(), dto.description());
         Product product = Product.builder()
                 .name(dto.name())
@@ -30,6 +33,14 @@ public class ProductService {
                 .seller(seller)
                 .build();
         productRepository.save(product);
+
+        return product.getId();
+    }
+
+    public List<ProductResponse> getAllProducts() {
+        return productRepository.findAll().stream()
+                .map(ProductResponse::of)
+                .toList();
     }
 
     public Product getProduct(Long productId) {

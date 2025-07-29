@@ -4,9 +4,12 @@ import com.example.bowchat.chatroom.dto.ChatRoomCreateDTO;
 import com.example.bowchat.chatroom.dto.ChatRoomResponse;
 import com.example.bowchat.chatroom.entity.ChatRoom;
 import com.example.bowchat.chatroom.entity.ChatRoomParticipant;
+import com.example.bowchat.chatroom.entity.ChatRoomType;
 import com.example.bowchat.chatroom.repository.ChatRoomRepository;
+import com.example.bowchat.chatroom.strategy.ChatRoomCreator;
 import com.example.bowchat.user.entity.User;
 import com.example.bowchat.user.repository.UserRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +30,16 @@ public class ChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
+    private final List<ChatRoomCreator<?>> creators;
+
+    private Map<ChatRoomType, ChatRoomCreator<?>> creatorMap;
+
+    @PostConstruct
+    private void init() {
+        creatorMap = creators.stream()
+                .collect(Collectors.toMap(ChatRoomCreator::roomType, Function.identity()));
+    }
+
 
     @Transactional
     public void createChatRoom(ChatRoomCreateDTO request, User owner) {
@@ -85,6 +101,18 @@ public class ChatRoomService {
 
         // 참여자 중 해당 유저를 찾아 비활성화 처리
         chatRoom.deactivateMember(user);
+    }
+
+    @Transactional
+    public <I> ChatRoomResponse createOrGetChatRoom(
+            ChatRoomType type, I identifier, User user
+    ) {
+        @SuppressWarnings("unchecked")
+        ChatRoomCreator<I> creator = (ChatRoomCreator<I>) creatorMap.get(type);
+        if (creator == null) {
+            throw new IllegalArgumentException("지원하지 않는 타입: " + type);
+        }
+        return creator.createOrGet(identifier, user);
     }
 
     private ChatRoom getChatRoomWithParticipants(Long roomId) {

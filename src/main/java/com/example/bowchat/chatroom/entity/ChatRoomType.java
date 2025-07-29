@@ -1,9 +1,7 @@
 package com.example.bowchat.chatroom.entity;
 
-
 public enum ChatRoomType {
-
-    DIRECT,    // 1:1 채팅 (상품 → 판매자)
-    GROUP      // 오픈/단체 채팅
-
+    DIRECT,   // 1:1 문의
+    GROUP,    // 일반 오픈 채팅
+    AUCTION   // 경매용 채팅(다자간)
 }

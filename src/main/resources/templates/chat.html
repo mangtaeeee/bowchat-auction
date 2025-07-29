@@ -1,233 +1,250 @@
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Kafka WebSocket Chat</title>
-    </head>
-    <body>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>BowChat Marketplace</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        section { margin-bottom: 40px; }
+        .product { border:1px solid #ddd; padding:10px; margin:5px 0; }
+        button { margin-left: 10px; }
+        #chatContainer { border:1px solid #ccc; padding:10px; display:none; }
+        #chat { height:200px; overflow-y:auto; border:1px solid #eee; padding:5px; }
+        #logoutBtn { position: absolute; top: 20px; right: 20px; }
+    </style>
+</head>
+<body>
 
-    <h2>WebSocket Chat</h2>
-    <button onclick="logout()">로그아웃</button>
-    <!-- 채팅방 생성 -->
-    <div>
-        <label>새 채팅방 이름:</label>
-        <input type="text" id="newRoomName" placeholder="채팅방 이름 입력">
-        <button onclick="createChatRoom()">채팅방 생성</button>
-    </div>
+<button id="logoutBtn">로그아웃</button>
+<h1>🔧 상품 등록</h1>
+<section>
+    <form id="product-form">
+        <input type="text" id="p-name" placeholder="상품명" required><br><br>
+        <textarea id="p-desc" placeholder="설명" required></textarea><br><br>
+        <input type="number" id="p-price" placeholder="가격" required><br><br>
+        <input type="url" id="p-img" placeholder="이미지 URL"><br><br>
 
-    <!-- 채팅방 목록 -->
-    <h3>채팅방 목록</h3>
-    <div id="chatRooms"></div>
+        <label><input type="radio" name="saleType" value="DIRECT" checked> 직거래</label>
+        <label><input type="radio" name="saleType" value="AUCTION"> 경매</label><br><br>
 
-    <!-- 채팅방 입장 -->
-    <h3>채팅방 입장</h3>
-    <div>
-        <label>채팅방 ID:</label>
-        <input type="text" id="roomId" placeholder="roomId 입력">
-        <button onclick="connect()">연결</button>
-        <button onclick="disconnect()">연결 해제</button>
-    </div>
+        <div id="auction-options" style="display:none;">
+            <label>경매 종료 시간:</label>
+            <input type="datetime-local" id="p-endTime"><br><br>
+        </div>
 
-    <!-- 메시지 입력 -->
-    <div>
-        <label>메시지:</label>
-        <input type="text" id="message" placeholder="메시지 입력">
-        <button onclick="sendMessage()">전송</button>
-    </div>
+        <button type="submit">상품 등록</button>
+    </form>
+</section>
 
-    <!-- 채팅 로그 -->
-    <h3>채팅 로그</h3>
-    <button onclick="leaveChatRoom()">채팅방 퇴장</button>
-    <div id="chat" style="border: 1px solid #ccc; padding: 10px; min-height: 200px;"></div>
+<h2>🏷 경매 상품</h2>
+<section id="auction-list"></section>
 
-    <script>
-        let socket = null;
-        let roomId = null;
+<h2>🛒 직거래 상품 문의</h2>
+<section id="direct-list"></section>
 
-        function createChatRoom() {
-            const token = localStorage.getItem('jwtToken');
-            if (!token) {
-                alert('로그인이 필요합니다.');
-                window.location.href = '/login';
-                return;
+<h2>💬 채팅</h2>
+<div id="chatContainer">
+    <div><strong>Room #<span id="room-id"></span></strong></div><br>
+    <div id="chat"></div><br>
+    <input type="text" id="msg-input" placeholder="메시지를 입력하세요">
+    <button onclick="sendMessage()">전송</button>
+    <button onclick="leaveRoom()">나가기</button>
+</div>
+
+<script>
+    let socket, roomId;
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.clear();
+        alert('로그아웃 되었습니다.');
+        location.href = '/login.html';
+    });
+
+    window.onload = async () => {
+        const params = new URLSearchParams(location.search);
+        const token = params.get('token');
+        if (token) {
+            localStorage.setItem('jwtToken', token);
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            localStorage.setItem('userEmail', payload.sub);
+            if (payload.userId) {
+                localStorage.setItem('userId', payload.userId);
             }
-
-            const chatRoomName = document.getElementById("newRoomName").value;
-            if (!chatRoomName) {
-                alert("채팅방 이름을 입력하세요.");
-                return;
-            }
-
-            fetch("/chat/rooms", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ chatRoomName })
-            })
-                .then(response => response.ok ? alert("채팅방 생성 완료") : alert("채팅방 생성 실패"))
-                .then(loadChatRooms);
+            history.replaceState({}, document.title, location.pathname);
         }
 
-        function loadChatRooms() {
-            const token = localStorage.getItem('jwtToken');
-            fetch("/chat/rooms", {
-                headers: {"Authorization": `Bearer ${token}`}
-            })
-                .then(response => response.json())
-                .then(data => {
-                    const chatRoomsDiv = document.getElementById("chatRooms");
-                    chatRoomsDiv.innerHTML = "";
-                    data.forEach(room => {
-                        let roomElement = document.createElement("p");
-                        roomElement.innerHTML = `<b>${room.roomId}</b>: ${room.roomName}
-                        <button onclick="joinRoom(${room.roomId})">입장</button>`;
-                        chatRoomsDiv.appendChild(roomElement);
-                    });
-                });
+        const savedToken = localStorage.getItem('jwtToken');
+        if (!savedToken) {
+            alert('로그인이 필요합니다.');
+            location.href = '/login.html';
+            return;
         }
 
-        function joinRoom(selectedRoomId) {
-            const token = localStorage.getItem('jwtToken');
+        document.querySelectorAll('[name=saleType]').forEach(el => {
+            el.addEventListener('change', () => {
+                document.getElementById('auction-options').style.display =
+                    document.querySelector('[name=saleType]:checked').value === 'AUCTION'
+                        ? 'block' : 'none';
+            });
+        });
 
-            fetch(`/chat/rooms/${selectedRoomId}`, {
-                headers: {"Authorization": `Bearer ${token}`}
-            })
-                .then(response => {
-                    if (!response.ok) throw new Error("채팅방 입장 실패");
-                    return response.json();
-                })
-                .then(data => {
-                    console.log("채팅방 입장 성공:", data);
-                    document.getElementById("roomId").value = selectedRoomId;
-                    loadPreviousMessages(selectedRoomId); // 과거 메시지 불러오기
-                    connect(); // WebSocket 연결
-                })
-                .catch(err => {
-                    alert("채팅방 입장 실패: " + err.message);
-                });
-        }
+        document.getElementById('product-form').addEventListener('submit', onProductSubmit);
+        await loadProducts();
+    };
 
-        function loadPreviousMessages(roomId) {
-            const token = localStorage.getItem('jwtToken');
-            fetch(`/chat/messages/${roomId}`, {
-                headers: {"Authorization": `Bearer ${token}`}
-            })
-                .then(response => response.json())
-                .then(messages => {
-                    const chatDiv = document.getElementById("chat");
-                    chatDiv.innerHTML = '';
-                    messages.forEach(showMessage);
-                });
-        }
-
-        function connect() {
-            if (socket !== null && socket.readyState === WebSocket.OPEN) {
-                socket.close();
-            }
-
-            const token = localStorage.getItem('jwtToken');
-            roomId = document.getElementById("roomId").value;
-
-            socket = new WebSocket("ws://localhost:8080/ws/chat?token=" + token + "&roomId=" + roomId);
-
-            socket.onopen = () => {
-                console.log("WebSocket 연결 성공");
-            };
-
-            socket.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                console.log("📩 받은 메시지:", message);
-                showMessage(message);
-            };
-
-            socket.onclose = () => {
-                console.log("WebSocket 연결 종료");
-            };
-
-            socket.onerror = (error) => {
-                console.error("WebSocket 오류:", error);
-            };
-        }
-
-        function disconnect() {
-            if (socket !== null) {
-                socket.close();
-            }
-        }
-
-        function sendMessage() {
-            const senderId = localStorage.getItem("userId");
-            const senderName = localStorage.getItem("userEmail");
-            const messageText = document.getElementById("message").value;
-
-            if (!messageText) {
-                alert("메시지를 입력하세요.");
-                return;
-            }
-
-            const chatMessage = {
-                roomId: roomId,
-                senderId: senderId,
-                senderName: senderName,
-                type: "CHAT",
-                content: messageText
-            };
-
-            socket.send(JSON.stringify(chatMessage));
-            document.getElementById("message").value = '';
-        }
-
-        function showMessage(message) {
-            const chatDiv = document.getElementById("chat");
-            const newMessage = document.createElement("p");
-            console.log(message)
-            newMessage.textContent = `[${message.type}] ${message.senderName}: ${message.content}`;
-            chatDiv.appendChild(newMessage);
-        }
-
-        function logout() {
-            localStorage.clear();
-            alert("로그아웃 되었습니다.");
-            window.location.href = "/login";
-        }
-
-        function leaveChatRoom() {
-            if (!roomId) return alert("현재 채팅방에 입장해 있지 않습니다.");
-
-            // 1) LEAVE 이벤트 발행 (Kafka → Consumer → DB/브로드캐스트)
-            const leaveEvent = {
-                roomId,
-                senderId: localStorage.getItem("userId"),
-                senderName: localStorage.getItem("userEmail"),
-                type: "LEAVE",
-                content: ""
-            };
-            socket.send(JSON.stringify(leaveEvent));
-
-            // 2) 클라이언트 세션 정리
-            disconnect();      // WebSocket close
-            clearChatLog();    // UI 청소
-            loadChatRooms();   // 방 목록 새로고침
-        }
-
-        function clearChatLog() {
-            document.getElementById("chat").innerHTML = '';
-        }
-
-        window.onload = () => {
-            const token = new URLSearchParams(window.location.search).get("token");
-            if (token) {
-                localStorage.setItem("jwtToken", token);
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                localStorage.setItem("userEmail", payload.sub);
-                localStorage.setItem("userId", payload.userId);
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
-            loadChatRooms();
+    async function onProductSubmit(e) {
+        e.preventDefault();
+        const token = localStorage.getItem('jwtToken');
+        const dto = {
+            name: document.getElementById('p-name').value,
+            description: document.getElementById('p-desc').value,
+            price: +document.getElementById('p-price').value,
+            imageUrl: document.getElementById('p-img').value,
+            categoryId: 1,
+            sellerId: +localStorage.getItem('userId')
         };
-    </script>
 
-    </body>
-    </html>
+        const res = await fetch('/products', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(dto)
+        });
+        if (!res.ok) return alert('상품 등록 실패');
+
+        const productId = await res.json(); // 응답은 Long 값
+
+        if (document.querySelector('[name=saleType]:checked').value === 'AUCTION') {
+            const raw = document.getElementById('p-endTime').value;
+            if (!raw) return alert('경매 종료 시간을 선택하세요');
+            const endTime = raw.replace('T',' ') + ':00';
+
+            const resAuc = await fetch(`/auctions/${productId}/start`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ endTime })
+            });
+            if (!resAuc.ok) return alert('경매 시작 실패');
+        }
+
+        window.location.reload();
+    }
+
+    async function loadProducts() {
+        const token = localStorage.getItem('jwtToken');
+        const [prods, auctions] = await Promise.all([
+            fetch('/products', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
+            fetch('/auctions', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json())
+        ]);
+
+        const aucList = document.getElementById('auction-list');
+        aucList.innerHTML = '';
+        auctions.forEach(a => {
+            const div = document.createElement('div');
+            div.className = 'product';
+            div.innerHTML = `
+      <strong>${a.productName}</strong> (현재가: ${a.currentPrice}원)<br>
+      종료: ${new Date(a.endTime).toLocaleString()}
+      <button onclick="enterRoom(${a.id}, 'AUCTION')">경매 참여</button>
+    `;
+            aucList.append(div);
+        });
+
+        const dirList = document.getElementById('direct-list');
+        dirList.innerHTML = '';
+        prods.forEach(p => {
+            if (auctions.some(a => a.productId === p.id)) return;
+            const div = document.createElement('div');
+            div.className = 'product';
+            div.innerHTML = `
+      <strong>${p.name}</strong> (${p.startingPrice}원)<br>
+      <button onclick="enterRoom(${p.id}, 'DIRECT')">채팅 문의</button>
+    `;
+            dirList.append(div);
+        });
+    }
+
+    async function enterRoom(id, type) {
+        const token = localStorage.getItem('jwtToken');
+        const res = await fetch(`/chat/rooms/${type}?productId=${id}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return alert('방 생성/조회 실패');
+
+        const room = await res.json();
+        roomId = room.roomId;
+
+        // 방 UI 표시
+        document.getElementById('room-id').innerText = roomId;
+        document.getElementById('chatContainer').style.display = 'block';
+
+        // 입찰 여부 판단
+        const msgInput = document.getElementById('msg-input');
+        const sendBtn = document.querySelector('button[onclick="sendMessage()"]');
+
+        if (type === 'AUCTION') {
+            msgInput.disabled = false;
+            sendBtn.style.display = 'inline-block';
+        } else {
+            msgInput.disabled = true;
+            sendBtn.style.display = 'none';
+        }
+
+        // 기존 메시지 불러오기
+        const msgs = await fetch(`/chat/messages/${roomId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        }).then(r => r.json());
+
+        const chatDiv = document.getElementById('chat');
+        chatDiv.innerHTML = '';
+        msgs.forEach(m => {
+            const p = document.createElement('p');
+            p.textContent = `[${m.type}] ${m.senderName}: ${m.content}`;
+            chatDiv.append(p);
+        });
+
+        if (socket) socket.close();
+        socket = new WebSocket(`ws://${location.host}/ws/chat?token=${token}&roomId=${roomId}`);
+        socket.onmessage = e => {
+            const m = JSON.parse(e.data);
+            const p = document.createElement('p');
+            p.textContent = `[${m.type}] ${m.senderName}: ${m.content}`;
+            document.getElementById('chat').append(p);
+        };
+    }
+
+    function sendMessage() {
+        const txt = document.getElementById('msg-input').value;
+        if (!txt) return;
+        socket.send(JSON.stringify({
+            roomId,
+            senderId: +localStorage.getItem('userId'),
+            senderName: localStorage.getItem('userEmail'),
+            type: 'CHAT',
+            content: txt
+        }));
+        document.getElementById('msg-input').value = '';
+    }
+
+    function leaveRoom() {
+        socket.send(JSON.stringify({
+            roomId,
+            senderId: +localStorage.getItem('userId'),
+            senderName: localStorage.getItem('userEmail'),
+            type: 'LEAVE',
+            content: ''
+        }));
+        socket.close();
+        document.getElementById('chatContainer').style.display = 'none';
+        loadProducts();
+    }
+</script>
+
+</body>
+</html>

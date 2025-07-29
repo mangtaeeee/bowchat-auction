@@ -2,6 +2,7 @@ package com.example.bowchat.chatroom.controller;
 
 import com.example.bowchat.chatroom.dto.ChatRoomCreateDTO;
 import com.example.bowchat.chatroom.dto.ChatRoomResponse;
+import com.example.bowchat.chatroom.entity.ChatRoomType;
 import com.example.bowchat.chatroom.service.ChatRoomService;
 import com.example.bowchat.user.entity.PrincipalDetails;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,19 @@ public class ChatRoomController {
             @AuthenticationPrincipal PrincipalDetails principalDetails) {
         chatRoomService.leaveChatRoom(roomId, principalDetails.getUser());
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{type}")
+    public ChatRoomResponse openChatRoomByType(
+            @PathVariable ChatRoomType type,
+            @RequestParam Long productId,
+            @AuthenticationPrincipal PrincipalDetails principal
+    ) {
+        return chatRoomService.createOrGetChatRoom(
+                type,
+                productId,
+                principal.getUser()
+        );
     }
 
 
