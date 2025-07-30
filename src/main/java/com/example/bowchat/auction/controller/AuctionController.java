@@ -26,10 +26,14 @@ public class AuctionController {
         return ResponseEntity.ok().build();
     }
 
-    /** 2) 전체 경매 목록 조회 */
     @GetMapping
     public ResponseEntity<List<AuctionResponse>> listAuctions() {
         List<AuctionResponse> list = auctionService.getAllAuctions();
         return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<AuctionResponse> getAuction(@PathVariable Long id) {
+        return ResponseEntity.ok(auctionService.findAuctionById(id));
     }
 }

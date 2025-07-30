@@ -55,14 +55,7 @@ public class AuctionService {
 
     public List<AuctionResponse> getAllAuctions() {
         return auctionRepository.findAll().stream()
-                .map(a -> AuctionResponse.builder()
-                        .id(a.getId())
-                        .productId(a.getProduct().getId())
-                        .productName(a.getProduct().getName())
-                        .currentPrice(a.getCurrentPrice())
-                        .endTime(a.getEndTime())
-                        .build()
-                ).toList();
+                .map(AuctionResponse::of).toList();
     }
 
     @Transactional
@@ -70,6 +63,12 @@ public class AuctionService {
         Product product = productService.getProduct(productId);
         Auction auction = Auction.of(product, endTime);
         auctionRepository.save(auction);
+    }
+
+    public AuctionResponse findAuctionById(Long id) {
+        Auction auction = auctionRepository.findWithProductAndSellerById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "경매를 찾을 수 없습니다."));
+        return AuctionResponse.of(auction);
     }
 
 
