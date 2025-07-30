@@ -16,6 +16,7 @@ public class ActionBidBroadcastConsumer {
     // 경매 입찰 메시지를 WebSocket으로 브로드캐스트
     @KafkaListener(topics = "action-bid", groupId = "action-bid-broadcast-group")
     public void broadcastBid(ChatEvent chatEvent) {
+        log.info("💬 입찰 브로드캐스트: {}", chatEvent);
         webSocketSessionManager.broadcast(chatEvent);
     }
 }

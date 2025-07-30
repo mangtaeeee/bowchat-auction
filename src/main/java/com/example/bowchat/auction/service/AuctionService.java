@@ -5,6 +5,8 @@ import com.example.bowchat.auction.entity.Auction;
 import com.example.bowchat.auction.entity.AuctionBid;
 import com.example.bowchat.auction.repository.AuctionBidRepository;
 import com.example.bowchat.auction.repository.AuctionRepository;
+import com.example.bowchat.kafka.ChatEventFactory;
+import com.example.bowchat.kafka.ChatProducer;
 import com.example.bowchat.product.entity.Product;
 import com.example.bowchat.product.service.ProductService;
 import com.example.bowchat.user.entity.User;
@@ -29,6 +31,7 @@ public class AuctionService {
     private final AuctionBidRepository auctionBidRepository;
     private final UserService userService;
     private final ProductService productService;
+    private final ChatProducer chatProducer;
 
     @Transactional
     public void placeBid(Long auctionId, Long userId, Long bidAmount) {
@@ -36,21 +39,35 @@ public class AuctionService {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow( ()-> new ResponseStatusException(HttpStatus.NOT_FOUND, "경매를 찾을 수 없습니다."));
         User bidder = userService.findById(userId);
-        if (auction.getProduct().getSeller().getId().equals(bidder.getId())) {
-            log.warn("판매자는 자신의 상품에 입찰할 수 없습니다. userId={}", userId);
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "판매자는 자신의 상품에 입찰할 수 없습니다.");
-        }
 
+        validateBidderIsNotSeller(auction, bidder);
+        validateBidAmountIsHigher(bidAmount, auction);
+
+        auction.placeBid(bidder, bidAmount, LocalDateTime.now());
+        auctionRepository.save(auction);
+        saveBid(bidAmount, auction, bidder);
+        log.info("현재가={}, 입찰가={}", auction.getCurrentPrice(), bidAmount);
+        sendBroadCast(auction.getId(), bidder.getId(), bidder.getEmail(), bidAmount);
+
+        log.info("경매 입찰 성공: 경매 ID={}, 입찰자 ID={}, 입찰 금액={}", auctionId, userId, bidAmount);
+    }
+
+    private void sendBroadCast(Long auctionId, Long userId, String email, Long bidAmount) {
+        chatProducer.send(ChatEventFactory.auctionBid(auctionId, userId, email, bidAmount));
+    }
+
+    private static void validateBidAmountIsHigher(Long bidAmount, Auction auction) {
         if (bidAmount <= auction.getCurrentPrice()) {
             log.warn("입찰 금액이 현재가보다 낮거나 같습니다. current={}, bid={}", auction.getCurrentPrice(), bidAmount);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "입찰 금액이 현재가보다 낮거나 같습니다.");
         }
+    }
 
-
-        auction.placeBid(bidder, bidAmount, LocalDateTime.now());
-        auctionRepository.save(auction);
-        savedBid(bidAmount, auction, bidder);
-        log.info("경매 입찰 성공: 경매 ID={}, 입찰자 ID={}, 입찰 금액={}", auctionId, userId, bidAmount);
+    private static void validateBidderIsNotSeller(Auction auction, User bidder) {
+        if (auction.getProduct().getSeller().getId().equals(bidder.getId())) {
+            log.warn("판매자는 자신의 상품에 입찰할 수 없습니다. userId={}", bidder.getId());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "판매자는 자신의 상품에 입찰할 수 없습니다.");
+        }
     }
 
     public List<AuctionResponse> getAllAuctions() {
@@ -72,7 +89,7 @@ public class AuctionService {
     }
 
 
-    private void savedBid(Long bidAmount, Auction auction, User bidder) {
+    private void saveBid(Long bidAmount, Auction auction, User bidder) {
         auctionBidRepository.save(
                 AuctionBid.builder()
                         .auction(auction)

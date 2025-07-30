@@ -223,21 +223,33 @@
     // 입찰 메시지 전송
     function sendBid() {
         const amount = +document.getElementById('bid-amount').value;
-        if (!amount || amount <= 0) return alert('입찰 금액을 입력하세요');
+        const { currentPrice, sellerId } = window.currentAuctionData;
+        const userId = +localStorage.getItem('userId');
+
+        if (userId === sellerId) {
+            alert("판매자는 자신의 경매에 입찰할 수 없습니다.");
+            return;
+        }
+
+        if (!amount || isNaN(amount) || amount <= currentPrice) {
+            alert(`입찰 금액은 현재가(${currentPrice}원)보다 높아야 합니다.`);
+            return;
+        }
 
         socket.send(JSON.stringify({
             roomId,
-            senderId: +localStorage.getItem('userId'),
+            senderId: userId,
             senderName: localStorage.getItem('userEmail'),
-            type: 'BID',
+            type: 'AUCTION_BID',
             content: amount
         }));
 
         document.getElementById('bid-amount').value = '';
     }
+
     function showMsg(m) {
         const p = document.createElement('p');
-        if (m.type === 'BID') {
+        if (m.type === 'AUCTION_BROADCAST') {
             p.innerHTML = `<strong>[입찰]</strong> ${m.senderName}님이 ${m.content}원 입찰`;
         } else {
             p.textContent = `[${m.type}] ${m.senderName}: ${m.content}`;
@@ -251,46 +263,13 @@
         const userId = +localStorage.getItem('userId');
         const userEmail = localStorage.getItem('userEmail');
 
-        const type = chatType; // 'AUCTION' 또는 'DIRECT'
-
-        if (type === 'AUCTION') {
-            const auctionData = window.currentAuctionData; // 아래 enterRoom에서 저장함
-            const currentPrice = auctionData.currentPrice;
-            const sellerId = auctionData.sellerId;
-
-            const bid = parseInt(txt);
-
-            // 1. 판매자 입찰 제한
-            if (userId === sellerId) {
-                alert("판매자는 자신의 경매에 입찰할 수 없습니다.");
-                return;
-            }
-
-            // 2. 숫자 아님 or 현재가 이하
-            if (isNaN(bid) || bid <= currentPrice) {
-                alert(`입찰 금액은 현재가 (${currentPrice}원) 보다 높아야 합니다.`);
-                return;
-            }
-
-            // ✅ 유효한 경매 메시지로 처리
-            socket.send(JSON.stringify({
-                roomId,
-                senderId: userId,
-                senderName: userEmail,
-                type: 'CHAT',
-                content: String(bid)  // 입찰가 전송
-            }));
-
-        } else {
-            // ✅ 일반 직거래 채팅
-            socket.send(JSON.stringify({
-                roomId,
-                senderId: userId,
-                senderName: userEmail,
-                type: 'CHAT',
-                content: txt
-            }));
-        }
+        socket.send(JSON.stringify({
+            roomId,
+            senderId: userId,
+            senderName: userEmail,
+            type: 'CHAT',
+            content: txt
+        }));
 
         document.getElementById('msg-input').value = '';
     }

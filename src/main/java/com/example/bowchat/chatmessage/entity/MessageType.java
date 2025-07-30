@@ -12,6 +12,7 @@ public enum MessageType {
     LEAVE("chat-event"),      // 유저 퇴장
     SYSTEM("chat-event"),     // 시스템 알림
     AUCTION_BID("auction-bid"),// 경매 입찰
+    AUCTION_BROADCAST("chat-message"), // 브로드캐스트용 메시지
     AUCTION_END("auction-bid"),// 경매 종료
     FILE("chat-message");        // 파일 전송
 
