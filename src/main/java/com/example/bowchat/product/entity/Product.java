@@ -35,20 +35,17 @@ public class Product {
     @JoinColumn(name = "SELLER_ID")
     private User seller;
 
-//    @OneToOne(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-//    private Auction auction;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "product")
+    @Builder.Default
     private List<ChatRoom> chatRooms = new ArrayList<>();
 
-    @ElementCollection
-    @CollectionTable(
-            name = "PRODUCT_IMAGES",
-            joinColumns = @JoinColumn(name = "PRODUCT_ID")
-    )
-    @Column(name = "IMAGE_URL")
+    @OneToMany(mappedBy = "product")
     @Builder.Default
-    private List<String> imageUrls = new ArrayList<>();
+    private List<ProductImage> productImages = new ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SaleType saleType;
 
     // 생성 시점 자동 설정
     @PrePersist
@@ -67,5 +64,10 @@ public class Product {
         this.name = name;
         this.description = description;
         this.startingPrice = startingPrice;
+    }
+
+    public void addProductImage(ProductImage image) {
+        this.productImages.add(image);   // 1. 연관관계 주인(productImage)의 컬렉션에 추가
+        image.setProduct(this);          // 2. 연관관계 주인이 참조하는 product 설정
     }
 }

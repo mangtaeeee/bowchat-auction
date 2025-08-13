@@ -7,6 +7,7 @@ import com.example.bowchat.auction.repository.AuctionRepository;
 import com.example.bowchat.chatmessage.entity.MessageType;
 import com.example.bowchat.product.dto.ProductCreateDTO;
 import com.example.bowchat.product.entity.Product;
+import com.example.bowchat.product.entity.SaleType;
 import com.example.bowchat.product.repository.ProductRepository;
 import com.example.bowchat.product.service.ProductService;
 import com.example.bowchat.user.dto.SingUpRequest;
@@ -47,6 +48,7 @@ class AuctionBidConsumerTest {
 
     private Auction auction;
     private User bidder;
+    private User seller;
 
     @BeforeEach
     void setUp() {
@@ -56,13 +58,23 @@ class AuctionBidConsumerTest {
         productRepository.deleteAll();
         userRepository.deleteAll();
 
+
         // 테스트 유저/상품/경매 준비
         userService.signup(new SingUpRequest("test@example.com", "pass", "테스터"));
+        userService.signup(new SingUpRequest("test2@example.com", "pass", "테스터"));
         bidder = userRepository.findByEmail("test@example.com").orElseThrow();
+        seller = userRepository.findByEmail("test2@example.com").orElseThrow();
+        ProductCreateDTO request = new ProductCreateDTO(
+                "아이폰15",
+                "미개봉입니다",
+                100L,
+                List.of("http://img1.jpg", "http://img2.jpg"),
+                SaleType.DIRECT
+        );
 
         productService.addProduct(
-                new ProductCreateDTO("테스트상품", "설명", 1000L, "http://img", 1L, bidder.getId()),
-                bidder
+                request,
+                seller
         );
         Product product = productRepository.findAll().get(0);
 

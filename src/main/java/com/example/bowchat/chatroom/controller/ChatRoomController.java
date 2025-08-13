@@ -52,16 +52,16 @@ public class ChatRoomController {
     }
 
     @PostMapping("/{type}")
-    public ChatRoomResponse openChatRoomByType(
+    public ResponseEntity<ChatRoomResponse> openChatRoomByType(
             @PathVariable ChatRoomType type,
             @RequestParam Long productId,
             @AuthenticationPrincipal PrincipalDetails principal
     ) {
-        return chatRoomService.createOrGetChatRoom(
+        return ResponseEntity.ok(chatRoomService.createOrGetChatRoom(
                 type,
                 productId,
                 principal.getUser()
-        );
+        ));
     }
 
 
