@@ -52,7 +52,7 @@ public class ProductService {
     }
 
     public List<ProductResponse> getAllProducts() {
-        return productRepository.findAll().stream()
+        return productRepository.findAllWithImages().stream()
                 .map(ProductResponse::of)
                 .toList();
     }

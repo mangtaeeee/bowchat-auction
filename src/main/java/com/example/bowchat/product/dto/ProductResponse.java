@@ -2,9 +2,11 @@ package com.example.bowchat.product.dto;
 
 import com.example.bowchat.product.entity.Product;
 import com.example.bowchat.product.entity.ProductImage;
+import lombok.Builder;
 
 import java.time.LocalDateTime;
 
+@Builder
 public record ProductResponse(
         Long id,
         String name,
@@ -23,16 +25,16 @@ public record ProductResponse(
                 .map(ProductImage::getUrl)
                 .orElse(null);
 
-        return new ProductResponse(
-                p.getId(),
-                p.getName(),
-                p.getDescription(),
-                p.getStartingPrice(),
-                p.getSeller().getEmail(),
-                thumbnailUrl,
-                p.getSaleType().name(),
-                p.getCreatedAt(),
-                p.getUpdatedAt()
-        );
+        return ProductResponse.builder()
+                .id(p.getId())
+                .name(p.getName())
+                .description(p.getDescription())
+                .startingPrice(p.getStartingPrice())
+                .sellerEmail(p.getSeller().getEmail())
+                .thumbnailUrl(thumbnailUrl)
+                .saleType(p.getSaleType().name())
+                .createdAt(p.getCreatedAt())
+                .updatedAt(p.getUpdatedAt())
+                .build();
     }
 }
