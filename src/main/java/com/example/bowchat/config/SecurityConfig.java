@@ -37,8 +37,8 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/login", "/signup", "/user/signup",
-                                "/oauth2/**","/chat", "/h2-console/**").permitAll()
+                        .requestMatchers("/auth/**", "/user/signup", "/uploads/**",
+                                "/oauth2/**","/view/**", "/h2-console/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().authenticated()
@@ -52,7 +52,7 @@ public class SecurityConfig {
                                 response.setContentType("application/json");
                                 response.getWriter().write("{\"message\":\"Unauthorized\"}");
                             } else {
-                                response.sendRedirect("/login");
+                                response.sendRedirect("/view/login");
                             }
                         })
                 )

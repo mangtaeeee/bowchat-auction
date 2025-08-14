@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title>상품 목록</title>
+<!--    <link rel="stylesheet" href="/css/style.css" />-->
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 0 24px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 0;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 28px;
+            color: #111827;
+        }
+
+        .add-button {
+            background-color: #2563eb;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .add-button:hover {
+            background-color: #1e40af;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .product-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .product-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            background-color: #e5e7eb;
+        }
+
+        .product-info {
+            padding: 16px;
+            flex-grow: 1;
+        }
+
+        .badges {
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            margin-right: 6px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: white;
+        }
+
+        .badge-auction {
+            background-color: #f97316;
+        }
+
+        .badge-direct {
+            background-color: #3b82f6;
+        }
+
+        .badge-bidding {
+            background-color: #10b981;
+        }
+
+        .product-title {
+            margin: 4px 0 6px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .product-desc {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .product-meta {
+            font-size: 13px;
+            color: #374151;
+        }
+
+        .product-meta small {
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>상품 목록</h1>
+    <a href="/view/product/new" class="add-button">+ 상품 등록하기</a>
+    <button class="add-button" onclick="logout()">로그아웃</button>
+</header>
+
+<div class="product-grid" id="product-list"></div>
+
+<script>
+    // ✅ [추가] URL에서 token 쿼리 파라미터 추출 → localStorage 저장
+    (function () {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get("token");
+
+        if (token) {
+            localStorage.setItem("jwtToken", token);
+
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+        }
+    })();
+
+    async function loadProducts() {
+        const token = localStorage.getItem("jwtToken");
+
+        if (!token) {
+            alert("로그인이 필요합니다.");
+            location.href = "/view/login";
+            return;
+        }
+
+        const res = await fetch("/api/products", {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!res.ok) {
+            alert("인증 실패. 다시 로그인해주세요.");
+            location.href = "/login";
+            return;
+        }
+
+        const products = await res.json();
+
+        const list = document.getElementById("product-list");
+        list.innerHTML = "";
+
+        products.forEach(product => {
+            const card = document.createElement("div");
+            card.className = "product-card";
+
+            const img = document.createElement("img");
+            img.src = product.thumbnailUrl || "/images/no-image.jpg";
+
+            const info = document.createElement("div");
+            info.className = "product-info";
+
+            const tags = [];
+            if (product.saleType === "AUCTION") {
+                tags.push('<span class="badge badge-auction">경매</span>');
+                tags.push('<span class="badge badge-bidding">입찰 중</span>');
+            } else if (product.saleType === "DIRECT") {
+                tags.push('<span class="badge badge-direct">직거래</span>');
+            }
+
+            info.innerHTML = `
+                <div class="badges">${tags.join(" ")}</div>
+                <div class="product-title">${product.name}</div>
+                <div class="product-desc">${product.description}</div>
+                <div class="product-meta">
+                    <div><strong>가격:</strong> ${product.startingPrice.toLocaleString()}원</div>
+                    <div><small>판매자: ${product.sellerEmail}</small></div>
+                </div>
+            `;
+
+            card.appendChild(img);
+            card.appendChild(info);
+            list.appendChild(card);
+        });
+    }
+
+    function logout() {
+        localStorage.removeItem("jwtToken");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("userId");
+        location.href = "/view/login";
+    }
+
+    // ✅ loadProducts는 페이지 진입 후 바로 실행
+    loadProducts();
+</script>
+
+</body>
+</html>

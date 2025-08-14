@@ -39,9 +39,9 @@ public class ProductService {
                 .build();
         productRepository.save(product);
 
-        List<ProductImage> images = IntStream.range(0, dto.imageUrl().size())
+        List<ProductImage> images = IntStream.range(0, dto.imageUrls().size())
                 .mapToObj(i -> {
-                    ProductImage image = ProductImage.of(dto.imageUrl().get(i), i, product);
+                    ProductImage image = ProductImage.of(dto.imageUrls().get(i), i, product);
                     product.getProductImages().add(image);
                     return image;
                 })

@@ -8,7 +8,7 @@ public record ProductCreateDTO(
     String name,
     String description,
     Long price,
-    List<String> imageUrl,
+    List<String> imageUrls,
     SaleType saleType
 
 ) {

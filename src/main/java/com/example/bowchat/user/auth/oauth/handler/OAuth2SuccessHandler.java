@@ -1,8 +1,6 @@
 package com.example.bowchat.user.auth.oauth.handler;
 
 import com.example.bowchat.user.auth.dto.AuthResponse;
-import com.example.bowchat.user.auth.jwt.JwtProvider;
-import com.example.bowchat.user.auth.repository.RefreshTokenRepository;
 import com.example.bowchat.user.auth.service.TokenService;
 import com.example.bowchat.user.entity.PrincipalDetails;
 import com.example.bowchat.user.entity.User;
@@ -41,7 +39,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         // 브라우저인지 모바일인지에 따라 리다이렉트 URL 지정
         String userAgent = request.getHeader("User-Agent");
         String redirectUrl = userAgent != null && userAgent.contains("Mozilla")
-                ? "/chat?token=" + accessToken  // 웹
+                ? "/view/product?token=" + accessToken  // 웹
                 : "http://localhost:3000/oauth2/success"; // 모바일/React
 
         response.sendRedirect(redirectUrl);

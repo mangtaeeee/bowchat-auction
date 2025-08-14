@@ -15,7 +15,7 @@
 </form>
 
 <br>
-<a href="/signup">회원가입 하러가기</a>
+<a href="/view/signup">회원가입 하러가기</a>
 <a href="/oauth2/authorization/google">구글 로그인</a>
 <a href="/oauth2/authorization/kakao">카카오 로그인</a>
 
@@ -41,7 +41,7 @@
             localStorage.setItem('userEmail', email);
             localStorage.setItem('userId', result.userInfo.id);
             alert('로그인 성공!');
-            window.location.href = '/chat';
+            window.location.href = '/view/product';
         } else if (response.status === 401) {
             const error = await response.json();
             alert('로그인 실패: ' + error.message);
