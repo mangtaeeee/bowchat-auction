@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 public enum ChatRoomParticipantRole {
 
     OWNER("OWNER"),
+    SELLER("SELLER"),
     MEMBER("MEMBER");
 
     private final String role;

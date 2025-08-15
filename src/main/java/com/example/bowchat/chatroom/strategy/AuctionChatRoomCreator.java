@@ -43,7 +43,7 @@ public class AuctionChatRoomCreator implements ChatRoomCreator<Long> {
                             .product(auction.getProduct())
                             .owner(auction.getProduct().getSeller())
                             .build();
-                    room.registerOwner(auction.getProduct().getSeller());
+                    room.registerSeller(auction.getProduct().getSeller());
                     return ChatRoomResponse.from(repo.save(room));
                 });
     }

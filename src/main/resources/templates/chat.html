@@ -2,142 +2,233 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>채팅방</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap" rel="stylesheet">
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Noto Sans KR', sans-serif;
-        }
-        body {
-            margin: 0;
-            background-color: #f7f7f7;
-        }
-        .chat-wrapper {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        .chat-header {
-            background-color: #fff;
-            padding: 16px;
-            font-weight: bold;
-            font-size: 18px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
-        .chat-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .chat-message {
-            max-width: 70%;
-            padding: 10px 14px;
-            border-radius: 16px;
-            font-size: 15px;
-        }
-        .mine {
-            align-self: flex-end;
-            background-color: #ffe100;
-        }
-        .theirs {
-            align-self: flex-start;
-            background-color: #fff;
-            border: 1px solid #ddd;
-        }
-        .chat-footer {
-            display: flex;
-            padding: 12px 16px;
-            background-color: #fff;
-            border-top: 1px solid #ddd;
-        }
-        .chat-footer input {
-            flex: 1;
-            padding: 10px;
-            font-size: 15px;
-            border: 1px solid #ddd;
-            border-radius: 20px;
-            outline: none;
-        }
-        .chat-footer button {
-            background-color: #ffe100;
-            border: none;
-            padding: 10px 18px;
-            margin-left: 8px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .chat-footer button:hover {
-            background-color: #ffdb00;
-        }
-        .chat-date {
-            text-align: center;
-            font-size: 13px;
-            color: #888;
-            margin: 12px 0;
-        }
+        body { margin: 0; font-family: sans-serif; background: #f4f4f4; }
+        .chat-wrapper { display: flex; flex-direction: column; height: 100vh; }
+        .chat-header { background: #ffe100; padding: 16px; font-weight: bold; }
+        .chat-body { flex: 1; overflow-y: auto; padding: 16px; background: white; }
+        .chat-footer { display: flex; padding: 10px; border-top: 1px solid #ccc; background: #fff; }
+        .chat-footer input { flex: 1; padding: 10px; border-radius: 16px; border: 1px solid #ccc; }
+        .chat-footer button { margin-left: 10px; padding: 10px 20px; border-radius: 16px; background: #ffe100; border: none; font-weight: bold; cursor: pointer; }
+        .chat-message { margin-bottom: 8px; }
+        .mine { text-align: left; color: #444; }      /* 왼쪽 정렬로 변경 */
+        .theirs { text-align: right; color: #111; }    /* 오른쪽 정렬 */
+        .chat-date { text-align: center; font-size: 13px; color: #888; margin: 12px 0; }
     </style>
 </head>
 <body>
 <div class="chat-wrapper">
-    <div class="chat-header" id="chatTitle">
-        채팅방 제목 로딩 중...
-    </div>
+    <div class="chat-header" id="chatTitle">채팅방</div>
     <div class="chat-body" id="chatBody"></div>
-    <div class="chat-footer">
+
+    <!-- 채팅 입력 -->
+    <div class="chat-footer" id="chatInputContainer">
         <input type="text" id="chatInput" placeholder="메시지를 입력하세요">
         <button onclick="sendMessage()">전송</button>
     </div>
+
+    <!-- 입찰 입력 -->
+    <div class="chat-footer" id="bidInputContainer" style="display: none;">
+        <input type="number" id="bidInput" placeholder="입찰 금액 입력">
+        <button onclick="sendBid()">입찰</button>
+    </div>
 </div>
 
-<!-- SockJS + StompJS CDN -->
-<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
-
 <script>
-    const token = localStorage.getItem("jwtToken");
-    const userId = localStorage.getItem("userId");
+    let socket;
+    let userId, userEmail;
+    const token = localStorage.getItem('jwtToken');
 
-    const params = new URLSearchParams(window.location.search);
-    const roomId = params.get("roomId");
-
-    if (!roomId || isNaN(roomId)) {
-        alert("잘못된 접근입니다.");
-        location.href = "/view/product";
-    }
-
-    async function loadChatRoom() {
+    function parseJwt(token) {
         try {
-            const res = await fetch(`/api/chat/rooms/${roomId}`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-
-            if (!res.ok) {
-                throw new Error("채팅방 불러오기 실패");
-            }
-
-            const room = await res.json();
-
-            // ✅ 잘못된 ID 및 필드명 수정
-            document.getElementById("chatTitle").textContent = room.roomName || "채팅방";
-
-            // (메시지가 없다고 에러 날 일은 없음. 메시지는 따로 fetch하거나 WebSocket 연결 이후 불러올 것)
-
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(
+                atob(base64).split('').map(c =>
+                    '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+                ).join('')
+            );
+            return JSON.parse(jsonPayload);
         } catch (e) {
-            console.error(e);
-            alert("채팅방 정보를 불러오지 못했습니다.");
-            location.href = "/view/product";
+            return null;
         }
     }
 
-    loadChatRoom();
+    const payload = parseJwt(token);
+    if (payload) {
+        userId = payload.userId;
+        userEmail = payload.sub || payload.email;
+    }
+
+    const params = new URLSearchParams(location.search);
+    const roomId = params.get('roomId');
+
+    if (!roomId || !token || !userId || !userEmail) {
+        alert("잘못된 접근입니다.");
+        window.location.href = '/view/product';
+    }
+
+    window.onload = async () => {
+        await loadMessages();
+        await loadAuctionInfo();
+        connectSocket();
+    };
+
+    function connectSocket() {
+        socket = new WebSocket(`ws://${location.host}/ws/chat?token=${token}&roomId=${roomId}`);
+
+        socket.onopen = () => {
+            console.log("🔌 WebSocket 연결 성공");
+        };
+
+        socket.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            showMessage(msg);
+
+            if (msg.participantCount !== undefined) {
+                showParticipantCount(msg.participantCount);
+            }
+
+            if (msg.type === 'AUCTION_END') {
+                document.getElementById('bidInputContainer').style.display = 'none';
+            }
+
+            if (msg.type === 'AUCTION_BID_FAIL') {
+                alert(`⚠️ 입찰 실패: ${msg.content}`);
+            }
+
+            // 💰 현재가 갱신
+            if (msg.type === 'AUCTION_BROADCAST') {
+                const bid = parseInt(msg.content);
+                if (!isNaN(bid)) {
+                    window.currentAuction.currentPrice = bid;
+                }
+            }
+        };
+
+        socket.onclose = () => {
+            console.log("❌ WebSocket 연결 종료");
+        };
+    }
+
+    function showParticipantCount(count) {
+        let countEl = document.getElementById('participant-count');
+        if (!countEl) {
+            countEl = document.createElement('div');
+            countEl.id = 'participant-count';
+            countEl.style.marginBottom = '12px';
+            document.getElementById('chatBody').prepend(countEl);
+        }
+        countEl.textContent = `👥 현재 참여자 수: ${count}`;
+    }
+
+    async function loadMessages() {
+        const res = await fetch(`/chat/messages/${roomId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const messages = await res.json();
+        messages.forEach(showMessage);
+    }
+
+    function showMessage(m) {
+        const p = document.createElement('p');
+        p.classList.add('chat-message');
+        if (m.senderName === userEmail) p.classList.add('mine');
+        else p.classList.add('theirs');
+
+        if (m.type === 'CHAT') {
+            p.innerText = `${m.senderName}: ${m.content}`;
+        } else if (m.type === 'AUCTION_BROADCAST') {
+            p.innerHTML = `<strong>[입찰]</strong> ${m.senderName}님이 ${m.content}원 입찰`;
+        } else if (m.type === 'ENTER') {
+            p.innerText = `🟢 ${m.senderName}님이 입장했습니다.`;
+        } else if (m.type === 'LEAVE') {
+            p.innerText = `🔴 ${m.senderName}님이 퇴장했습니다.`;
+        } else if (m.type === 'AUCTION_END') {
+            p.innerHTML = `<strong style="color:red">⚠️ 경매가 종료되었습니다.</strong>`;
+        }
+        document.getElementById('chatBody').append(p);
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('chatInput');
+        const txt = input?.value?.trim();
+        if (!txt) return;
+
+        const payload = {
+            roomId,
+            senderId: userId,
+            senderName: userEmail,
+            type: 'CHAT',
+            content: txt
+        };
+        socket.send(JSON.stringify(payload));
+        input.value = '';
+    }
+
+    async function loadAuctionInfo() {
+        try {
+            const res = await fetch(`/api/chat/rooms/${roomId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const room = await res.json();
+
+            if (room.saleType === 'AUCTION') {
+                const seller = room.participants.find(p => p.role === 'SELLER');
+                console.log(seller)
+                const sellerId = seller?.participantId;
+
+                window.currentAuction = {
+                    currentPrice: 0,
+                    sellerId,
+                    endTime: new Date("9999-12-31T23:59:59")
+                };
+
+                // 판매자이면 입찰창 숨기기
+                if (userId !== sellerId) {
+                    document.getElementById('bidInputContainer').style.display = 'flex';
+                } else {
+                    document.getElementById('bidInputContainer').style.display = 'none';
+                }
+            }
+        } catch (e) {
+            console.log("경매 아님 또는 에러 발생:", e);
+        }
+    }
+
+    function sendBid() {
+        const input = document.getElementById('bidInput');
+        const bidAmount = +input.value;
+        const { currentPrice, sellerId, endTime } = window.currentAuction || {};
+
+        if (!bidAmount || isNaN(bidAmount)) {
+            alert("숫자를 입력하세요.");
+            return;
+        }
+        if (userId === sellerId) {
+            alert("판매자는 입찰할 수 없습니다.");
+            return;
+        }
+        if (bidAmount <= currentPrice) {
+            alert(`입찰 금액은 현재가(${currentPrice})보다 높아야 합니다.`);
+            return;
+        }
+        if (new Date() > endTime) {
+            alert("경매가 이미 종료되었습니다.");
+            return;
+        }
+
+        const payload = {
+            roomId,
+            senderId: userId,
+            senderName: userEmail,
+            type: 'AUCTION_BID',
+            content: bidAmount
+        };
+        socket.send(JSON.stringify(payload));
+        input.value = '';
+    }
 </script>
 </body>
 </html>

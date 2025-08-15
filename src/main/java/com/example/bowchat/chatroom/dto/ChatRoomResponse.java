@@ -20,7 +20,7 @@ public record ChatRoomResponse(
                 .roomId(chatRoom.getId())
                 .roomName(chatRoom.getName())
                 .type(chatRoom.getType())
-                .saleType(chatRoom.getProduct().getSaleType()) // 반드시 포함
+                .saleType(chatRoom.getProduct().getSaleType())
                 .participants(chatRoom.getParticipants().stream().map(ChatParticipantResponse::of).toList())
                 .build();
     }

@@ -49,6 +49,11 @@ public class ChatRoom {
         participants.add(owner);
     }
 
+    public void registerSeller(User user) {
+        ChatRoomParticipant owner = ChatRoomParticipant.create(this, user, ChatRoomParticipantRole.SELLER);
+        participants.add(owner);
+    }
+
     public void deactivateMember(User user) {
         participants.stream()
                 .filter(p -> p.getUser().getId().equals(user.getId()))
