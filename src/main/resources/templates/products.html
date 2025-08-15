@@ -173,6 +173,10 @@
             const card = document.createElement("div");
             card.className = "product-card";
 
+            card.onclick = () => {
+                location.href = `/view/product-detail?id=${product.id}`;
+            };
+
             const img = document.createElement("img");
             img.src = product.thumbnailUrl || "/images/no-image.jpg";
 

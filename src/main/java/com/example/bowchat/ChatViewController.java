@@ -28,6 +28,11 @@ public class ChatViewController {
         return "product-new";
     }
 
+    @GetMapping("/product-detail")
+    public String productsDetail() {
+        return "product-detail";
+    }
+
     @GetMapping("/signup")
     public String signupView() {
         return "signup";

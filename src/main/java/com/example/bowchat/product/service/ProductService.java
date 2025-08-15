@@ -1,6 +1,7 @@
 package com.example.bowchat.product.service;
 
 import com.example.bowchat.product.dto.ProductCreateDTO;
+import com.example.bowchat.product.dto.ProductDetail;
 import com.example.bowchat.product.dto.ProductResponse;
 import com.example.bowchat.product.entity.Product;
 import com.example.bowchat.product.entity.ProductImage;
@@ -49,6 +50,12 @@ public class ProductService {
         productImageRepository.saveAll(images);
 
         return product.getId();
+    }
+
+    public ProductDetail getProductDetail(Long productId, User seller) {
+        Product product = getProduct(productId);
+        boolean isSeller = seller != null && product.getSeller().getId().equals(seller.getId());
+        return ProductDetail.of(product, isSeller);
     }
 
     public List<ProductResponse> getAllProducts() {

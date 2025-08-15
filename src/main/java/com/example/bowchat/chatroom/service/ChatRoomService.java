@@ -1,6 +1,5 @@
 package com.example.bowchat.chatroom.service;
 
-import com.example.bowchat.chatroom.dto.ChatRoomCreateDTO;
 import com.example.bowchat.chatroom.dto.ChatRoomResponse;
 import com.example.bowchat.chatroom.entity.ChatRoom;
 import com.example.bowchat.chatroom.entity.ChatRoomParticipant;
@@ -38,25 +37,6 @@ public class ChatRoomService {
     private void init() {
         creatorMap = creators.stream()
                 .collect(Collectors.toMap(ChatRoomCreator::roomType, Function.identity()));
-    }
-
-
-    @Transactional
-    public void createChatRoom(ChatRoomCreateDTO request, User owner) {
-
-        ChatRoom chatRoom = ChatRoom.builder()
-                .name(request.chatRoomName())
-                .owner(owner)
-                .build();
-
-        chatRoomRepository.save(chatRoom);
-        chatRoom.registerOwner(owner);
-
-        log.info("채팅방 생성 완료: {}, 개설자={}", chatRoom.getName(), owner.getEmail());
-    }
-
-    public List<ChatRoomResponse> getAllChatRooms() {
-        return chatRoomRepository.findAll().stream().map(ChatRoomResponse::from).toList();
     }
 
     @Transactional

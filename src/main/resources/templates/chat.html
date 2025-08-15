@@ -2,291 +2,142 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>BowChat Marketplace</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>채팅방</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        section { margin-bottom: 40px; }
-        .product { border:1px solid #ddd; padding:10px; margin:5px 0; }
-        button { margin-left: 10px; }
-        #chatContainer { border:1px solid #ccc; padding:10px; display:none; }
-        #chat { height:200px; overflow-y:auto; border:1px solid #eee; padding:5px; }
-        #logoutBtn { position: absolute; top: 20px; right: 20px; }
+        * {
+            box-sizing: border-box;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        body {
+            margin: 0;
+            background-color: #f7f7f7;
+        }
+        .chat-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .chat-header {
+            background-color: #fff;
+            padding: 16px;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .chat-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .chat-message {
+            max-width: 70%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 15px;
+        }
+        .mine {
+            align-self: flex-end;
+            background-color: #ffe100;
+        }
+        .theirs {
+            align-self: flex-start;
+            background-color: #fff;
+            border: 1px solid #ddd;
+        }
+        .chat-footer {
+            display: flex;
+            padding: 12px 16px;
+            background-color: #fff;
+            border-top: 1px solid #ddd;
+        }
+        .chat-footer input {
+            flex: 1;
+            padding: 10px;
+            font-size: 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+        }
+        .chat-footer button {
+            background-color: #ffe100;
+            border: none;
+            padding: 10px 18px;
+            margin-left: 8px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .chat-footer button:hover {
+            background-color: #ffdb00;
+        }
+        .chat-date {
+            text-align: center;
+            font-size: 13px;
+            color: #888;
+            margin: 12px 0;
+        }
     </style>
 </head>
 <body>
-
-<button id="logoutBtn">로그아웃</button>
-<h1>🔧 상품 등록</h1>
-<section>
-    <form id="product-form">
-        <input type="text" id="p-name" placeholder="상품명" required><br><br>
-        <textarea id="p-desc" placeholder="설명" required></textarea><br><br>
-        <input type="number" id="p-price" placeholder="가격" required><br><br>
-        <input type="url" id="p-img" placeholder="이미지 URL"><br><br>
-
-        <label><input type="radio" name="saleType" value="DIRECT" checked> 직거래</label>
-        <label><input type="radio" name="saleType" value="AUCTION"> 경매</label><br><br>
-
-        <div id="auction-options" style="display:none;">
-            <label>경매 종료 시간:</label>
-            <input type="datetime-local" id="p-endTime"><br><br>
-        </div>
-
-        <button type="submit">상품 등록</button>
-    </form>
-</section>
-
-<h2>🏷 경매 상품</h2>
-<section id="auction-list"></section>
-
-<h2>🛒 직거래 상품 문의</h2>
-<section id="direct-list"></section>
-
-<h2>💬 채팅</h2>
-<div id="chatContainer">
-    <div><strong>Room #<span id="room-id"></span></strong></div><br>
-    <div id="chat"></div><br>
-    <input type="text" id="msg-input" placeholder="메시지를 입력하세요">
-    <button onclick="sendMessage()">전송</button>
-    <!-- 입찰 UI 추가 -->
-    <div id="bid-area" style="display:none; margin-top:10px;">
-        <input type="number" id="bid-amount" placeholder="입찰 금액 입력">
-        <button onclick="sendBid()">입찰</button>
+<div class="chat-wrapper">
+    <div class="chat-header" id="chatTitle">
+        채팅방 제목 로딩 중...
     </div>
-    <button onclick="leaveRoom()">나가기</button>
+    <div class="chat-body" id="chatBody"></div>
+    <div class="chat-footer">
+        <input type="text" id="chatInput" placeholder="메시지를 입력하세요">
+        <button onclick="sendMessage()">전송</button>
+    </div>
 </div>
 
+<!-- SockJS + StompJS CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
 <script>
-    let socket, roomId;
+    const token = localStorage.getItem("jwtToken");
+    const userId = localStorage.getItem("userId");
 
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        localStorage.clear();
-        alert('로그아웃 되었습니다.');
-        location.href = '/login.html';
-    });
+    const params = new URLSearchParams(window.location.search);
+    const roomId = params.get("roomId");
 
-    window.onload = async () => {
-        const params = new URLSearchParams(location.search);
-        const token = params.get('token');
-        if (token) {
-            localStorage.setItem('jwtToken', token);
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            localStorage.setItem('userEmail', payload.sub);
-            if (payload.userId) {
-                localStorage.setItem('userId', payload.userId);
-            }
-            history.replaceState({}, document.title, location.pathname);
-        }
+    if (!roomId || isNaN(roomId)) {
+        alert("잘못된 접근입니다.");
+        location.href = "/view/product";
+    }
 
-        const savedToken = localStorage.getItem('jwtToken');
-        if (!savedToken) {
-            alert('로그인이 필요합니다.');
-            location.href = '/login.html';
-            return;
-        }
-
-        document.querySelectorAll('[name=saleType]').forEach(el => {
-            el.addEventListener('change', () => {
-                document.getElementById('auction-options').style.display =
-                    document.querySelector('[name=saleType]:checked').value === 'AUCTION'
-                        ? 'block' : 'none';
-            });
-        });
-
-        document.getElementById('product-form').addEventListener('submit', onProductSubmit);
-        await loadProducts();
-    };
-
-    async function onProductSubmit(e) {
-        e.preventDefault();
-        const token = localStorage.getItem('jwtToken');
-        const dto = {
-            name: document.getElementById('p-name').value,
-            description: document.getElementById('p-desc').value,
-            price: +document.getElementById('p-price').value,
-            imageUrl: document.getElementById('p-img').value,
-            categoryId: 1,
-            sellerId: +localStorage.getItem('userId')
-        };
-
-        const res = await fetch('/products', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(dto)
-        });
-        if (!res.ok) return alert('상품 등록 실패');
-
-        const productId = await res.json(); // 응답은 Long 값
-
-        if (document.querySelector('[name=saleType]:checked').value === 'AUCTION') {
-            const raw = document.getElementById('p-endTime').value;
-            if (!raw) return alert('경매 종료 시간을 선택하세요');
-            const endTime = raw.replace('T',' ') + ':00';
-
-            const resAuc = await fetch(`/auctions/${productId}/start`, {
-                method: 'POST',
+    async function loadChatRoom() {
+        try {
+            const res = await fetch(`/api/chat/rooms/${roomId}`, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ endTime })
+                    "Authorization": `Bearer ${token}`
+                }
             });
-            if (!resAuc.ok) return alert('경매 시작 실패');
-        }
 
-        window.location.reload();
-    }
-
-    async function loadProducts() {
-        const token = localStorage.getItem('jwtToken');
-        const [prods, auctions] = await Promise.all([
-            fetch('/products', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
-            fetch('/auctions', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json())
-        ]);
-
-        const aucList = document.getElementById('auction-list');
-        aucList.innerHTML = '';
-        auctions.forEach(a => {
-            const div = document.createElement('div');
-            div.className = 'product';
-            div.innerHTML = `
-      <strong>${a.productName}</strong> (현재가: ${a.currentPrice}원)<br>
-      종료: ${new Date(a.endTime).toLocaleString()}
-      <button onclick="enterRoom(${a.id}, 'AUCTION')">경매 참여</button>
-    `;
-            aucList.append(div);
-        });
-
-        const dirList = document.getElementById('direct-list');
-        dirList.innerHTML = '';
-        prods.forEach(p => {
-            if (auctions.some(a => a.productId === p.id)) return;
-            const div = document.createElement('div');
-            div.className = 'product';
-            div.innerHTML = `
-      <strong>${p.name}</strong> (${p.startingPrice}원)<br>
-      <button onclick="enterRoom(${p.id}, 'DIRECT')">채팅 문의</button>
-    `;
-            dirList.append(div);
-        });
-    }
-
-    async function enterRoom(id, type) {
-        const token = localStorage.getItem('jwtToken');
-        const res = await fetch(`/chat/rooms/${type}?productId=${id}`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!res.ok) return alert('방 생성/조회 실패');
-
-        const room = await res.json();
-        roomId = room.roomId;
-        chatType = type;
-        document.getElementById('room-id').innerText = roomId;
-        document.getElementById('chatContainer').style.display = 'block';
-
-        // 메시지 로딩
-        const msgs = await fetch(`/chat/messages/${roomId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        }).then(r => r.json());
-        const chatDiv = document.getElementById('chat');
-        chatDiv.innerHTML = '';
-        msgs.forEach(showMsg);
-
-        // WebSocket
-        if (socket) socket.close();
-        socket = new WebSocket(`ws://${location.host}/ws/chat?token=${token}&roomId=${roomId}`);
-        socket.onmessage = e => showMsg(JSON.parse(e.data));
-
-        // 비드 영역 조건부 렌더링
-        if (chatType === 'AUCTION') {
-            const userId = +localStorage.getItem('userId');
-            const productRes = await fetch(`/auctions/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
-            const auction = await productRes.json();
-
-            window.currentAuctionData = {
-                currentPrice: auction.currentPrice,
-                sellerId: auction.sellerId
-            };
-
-            if (auction.sellerId !== userId) {
-                document.getElementById('bid-area').style.display = 'block';
-            } else {
-                document.getElementById('bid-area').style.display = 'none';
+            if (!res.ok) {
+                throw new Error("채팅방 불러오기 실패");
             }
+
+            const room = await res.json();
+
+            // ✅ 잘못된 ID 및 필드명 수정
+            document.getElementById("chatTitle").textContent = room.roomName || "채팅방";
+
+            // (메시지가 없다고 에러 날 일은 없음. 메시지는 따로 fetch하거나 WebSocket 연결 이후 불러올 것)
+
+        } catch (e) {
+            console.error(e);
+            alert("채팅방 정보를 불러오지 못했습니다.");
+            location.href = "/view/product";
         }
     }
 
-    // 입찰 메시지 전송
-    function sendBid() {
-        const amount = +document.getElementById('bid-amount').value;
-        const { currentPrice, sellerId } = window.currentAuctionData;
-        const userId = +localStorage.getItem('userId');
-
-        if (userId === sellerId) {
-            alert("판매자는 자신의 경매에 입찰할 수 없습니다.");
-            return;
-        }
-
-        if (!amount || isNaN(amount) || amount <= currentPrice) {
-            alert(`입찰 금액은 현재가(${currentPrice}원)보다 높아야 합니다.`);
-            return;
-        }
-
-        socket.send(JSON.stringify({
-            roomId,
-            senderId: userId,
-            senderName: localStorage.getItem('userEmail'),
-            type: 'AUCTION_BID',
-            content: amount
-        }));
-
-        document.getElementById('bid-amount').value = '';
-    }
-
-    function showMsg(m) {
-        const p = document.createElement('p');
-        if (m.type === 'AUCTION_BROADCAST') {
-            p.innerHTML = `<strong>[입찰]</strong> ${m.senderName}님이 ${m.content}원 입찰`;
-        } else {
-            p.textContent = `[${m.type}] ${m.senderName}: ${m.content}`;
-        }
-        document.getElementById('chat').append(p);
-    }
-    function sendMessage() {
-        const txt = document.getElementById('msg-input').value;
-        if (!txt) return;
-
-        const userId = +localStorage.getItem('userId');
-        const userEmail = localStorage.getItem('userEmail');
-
-        socket.send(JSON.stringify({
-            roomId,
-            senderId: userId,
-            senderName: userEmail,
-            type: 'CHAT',
-            content: txt
-        }));
-
-        document.getElementById('msg-input').value = '';
-    }
-
-    function leaveRoom() {
-        socket.send(JSON.stringify({
-            roomId,
-            senderId: +localStorage.getItem('userId'),
-            senderName: localStorage.getItem('userEmail'),
-            type: 'LEAVE',
-            content: ''
-        }));
-        socket.close();
-        document.getElementById('chatContainer').style.display = 'none';
-        loadProducts();
-    }
+    loadChatRoom();
 </script>
-
 </body>
 </html>

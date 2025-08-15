@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>상품 상세</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css"/>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: auto;
+            padding: 40px;
+            background-color: #f9fafb;
+        }
+        .swiper {
+            width: 100%;
+            height: 320px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .swiper-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        .info {
+            margin-top: 20px;
+        }
+        h1 { margin: 0 0 10px; }
+        .price {
+            font-size: 20px;
+            color: #2563eb;
+            font-weight: bold;
+        }
+        .description {
+            margin: 20px 0;
+            color: #374151;
+        }
+        button {
+            background-color: #10b981;
+            color: white;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #059669;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Swiper 슬라이드 -->
+<div class="swiper mySwiper">
+    <div class="swiper-wrapper" id="image-container"></div>
+    <div class="swiper-button-next"></div>
+    <div class="swiper-button-prev"></div>
+</div>
+
+<!-- 상품 정보 영역 -->
+<div class="info">
+    <h1 id="product-name">상품명</h1>
+    <div class="price" id="product-price"></div>
+    <div class="description" id="product-description"></div>
+    <div id="seller-email"></div>
+    <div id="chat-button-area"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+<script>
+    const token = localStorage.getItem("jwtToken");
+    const userId = localStorage.getItem("userId");
+
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get("id");
+
+    if (!productId || !token) {
+        alert("잘못된 접근입니다.");
+        location.href = "/view/product";
+    }
+
+    async function loadProductDetail() {
+        try {
+            const res = await fetch(`/api/products/${productId}`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            if (!res.ok) throw new Error("불러오기 실패");
+
+            const product = await res.json();
+
+            // 이미지 슬라이드 처리
+            const imageContainer = document.getElementById("image-container");
+            imageContainer.innerHTML = "";
+            product.imageUrls.forEach(url => {
+                const slide = document.createElement("div");
+                slide.className = "swiper-slide";
+
+                const img = document.createElement("img");
+                img.src = url;
+
+                slide.appendChild(img);
+                imageContainer.appendChild(slide);
+            });
+
+            // 슬라이더 초기화
+            new Swiper(".mySwiper", {
+                navigation: {
+                    nextEl: ".swiper-button-next",
+                    prevEl: ".swiper-button-prev",
+                },
+                loop: true
+            });
+
+            // 기본 정보 렌더링
+            document.getElementById("product-name").textContent = product.productName;
+            document.getElementById("product-description").textContent = product.productDescription;
+            document.getElementById("product-price").textContent =
+                product.productPrice != null ? product.productPrice.toLocaleString() + "원" : "가격 정보 없음";
+            document.getElementById("seller-email").textContent = `판매자: ${product.sellerNickname}`;
+
+            // 버튼 렌더링
+            const buttonArea = document.getElementById("chat-button-area");
+
+            const createChatButton = (text, type, method = "POST") => {
+                const btn = document.createElement("button");
+                btn.textContent = text;
+
+                btn.onclick = async () => {
+                    try {
+                        const res = await fetch(`/api/chat/rooms/${type}?productId=${product.productId}`, {
+                            method,
+                            headers: {
+                                "Authorization": `Bearer ${token}`
+                            }
+                        });
+
+                        if (!res.ok) {
+                            alert("채팅방 정보를 불러오지 못했습니다.");
+                            return;
+                        }
+
+                        const chatRoom = await res.json();
+
+                        if (!chatRoom.roomId || isNaN(chatRoom.roomId)) {
+                            alert("잘못된 채팅방 정보입니다.");
+                            return;
+                        }
+
+                        location.href = `/view/chat?roomId=${chatRoom.roomId}`;
+                    } catch (e) {
+                        console.error(e);
+                        alert("채팅방 조회 실패");
+                    }
+                };
+
+                buttonArea.appendChild(btn);
+            };
+
+            if (product.isSeller) {
+                // 판매자 - 경매 채팅방 입장 (POST로 통일)
+                createChatButton("대화 중인 채팅방 보기", "AUCTION", "POST");
+            } else {
+                // 구매자
+                if (product.saleType === 'AUCTION') {
+                    createChatButton("경매 채팅 참여", "AUCTION", "POST");
+                } else {
+                    createChatButton("채팅 문의", "DIRECT", "POST");
+                }
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert("상품 정보를 불러오지 못했습니다.");
+        }
+    }
+
+    loadProductDetail();
+</script>
+</body>
+</html>

@@ -186,6 +186,7 @@
 
                 const endTime = endTimeInput.replace("T", " ") + ":00";
 
+                // 1. 경매 시작 요청
                 const res2 = await fetch(`/api/auctions/${productId}/start`, {
                     method: "POST",
                     headers: {
@@ -201,6 +202,23 @@
                     alert("경매 시작 실패!");
                     return;
                 }
+
+                // 2. 경매 채팅방 생성 요청
+                const res3 = await fetch(`/api/chat/rooms/AUCTION?productId=${productId}`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    }
+                });
+
+                if (!res3.ok) {
+                    const errorText = await res3.text();
+                    console.error("경매 채팅방 생성 실패", errorText);
+                    alert("채팅방 생성 실패!");
+                    return;
+                }
+
+                console.log("경매 채팅방 생성 완료");
             }
 
             alert("상품 등록 성공!");

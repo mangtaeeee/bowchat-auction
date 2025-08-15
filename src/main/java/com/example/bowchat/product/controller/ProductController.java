@@ -1,6 +1,7 @@
 package com.example.bowchat.product.controller;
 
 import com.example.bowchat.product.dto.ProductCreateDTO;
+import com.example.bowchat.product.dto.ProductDetail;
 import com.example.bowchat.product.dto.ProductResponse;
 import com.example.bowchat.product.service.ProductService;
 import com.example.bowchat.user.entity.PrincipalDetails;
@@ -24,6 +25,15 @@ public class ProductController {
     public ResponseEntity<List<ProductResponse>> listProducts() {
         List<ProductResponse> products = productService.getAllProducts();
         return ResponseEntity.ok(products);
+    }
+
+    @GetMapping("/{productId}")
+    public ResponseEntity<ProductDetail> getProductDetail(
+            @PathVariable Long productId,
+            @AuthenticationPrincipal PrincipalDetails principalDetails) {
+
+        ProductDetail productDetail = productService.getProductDetail(productId, principalDetails.getUser());
+        return ResponseEntity.ok(productDetail);
     }
 
     @PostMapping
