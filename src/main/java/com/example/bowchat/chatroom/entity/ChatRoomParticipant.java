@@ -25,9 +25,10 @@ public class ChatRoomParticipant {
 
     @Enumerated(EnumType.STRING)
     private ChatRoomParticipantRole role; // 채팅방 참여자의 역할 (예: OWNER, MEMBER 등)
-    private boolean isActive; // 현재 채팅방 참여 여부
-    private Long lastReadMessageId;
 
+    private boolean isActive; // 현재 채팅방 참여 여부
+
+    private Long lastReadMessageId;
 
     public static ChatRoomParticipant create(ChatRoom chatRoom, User user, ChatRoomParticipantRole role) {
         return ChatRoomParticipant.builder()

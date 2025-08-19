@@ -14,7 +14,7 @@ import java.util.List;
 
 @Entity
 @Table(
-        name = "users",
+        name = "USERS",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"provider", "providerId"})
         }

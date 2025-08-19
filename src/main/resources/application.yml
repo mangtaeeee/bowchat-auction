@@ -6,7 +6,7 @@ spring:
       - classpath:application-dev.yml
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: false
@@ -21,3 +21,6 @@ spring:
     resources:
       add-mappings: false
 
+logging:
+  level:
+    net.javacrumbs.shedlock: DEBUG

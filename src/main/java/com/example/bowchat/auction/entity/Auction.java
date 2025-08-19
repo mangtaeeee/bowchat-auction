@@ -59,6 +59,7 @@ public class Auction {
         return now.isAfter(endTime);
     }
 
+
     public static Auction of(Product product, LocalDateTime endTime) {
         return Auction.builder()
                 .product(product)
