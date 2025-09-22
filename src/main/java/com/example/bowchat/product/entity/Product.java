@@ -22,13 +22,18 @@ public class Product {
     @Column(name = "PRODUCT_ID")
     private Long id;
 
+    @Column(name = "PRODUCT_NAME")
     private String name;
+
+    @Column(name = "DESCRIPTION")
     private String description;
 
     @Column(name = "STARTING_PRICE")
     private Long startingPrice;
 
+    @Column(name = "CREATED_AT")
     private LocalDateTime createdAt;
+    @Column(name = "UPDATED_AT")
     private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -44,7 +49,7 @@ public class Product {
     private List<ProductImage> productImages = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "SALE_TYPE", nullable = false)
     private SaleType saleType;
 
     // 생성 시점 자동 설정
