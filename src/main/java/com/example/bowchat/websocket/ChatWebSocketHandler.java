@@ -1,7 +1,9 @@
 package com.example.bowchat.websocket;
 
+import com.example.bowchat.global.exception.BowChatException;
 import com.example.bowchat.kafka.ChatEvent;
 import com.example.bowchat.kafka.ChatProducer;
+import com.example.bowchat.kafka.manager.ChatEventValidatorManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +13,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -24,6 +27,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final WebSocketSessionManager sessionManager;
     private final ChatProducer kafkaProducer;
     private final ObjectMapper objectMapper;
+    private final ChatEventValidatorManager chatEventValidatorManager;
 
 
     @Override
@@ -47,14 +51,40 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             // 클라이언트 메시지를 ChatEvent로 매핑
             ChatEvent chatEvent = objectMapper.readValue(message.getPayload(), ChatEvent.class);
-
             ChatEvent enrichedEvent = ChatEvent.enrichChatEvent(roomId, chatEvent);
+
+            // 메시지 유효성 검사
+            chatEventValidatorManager.validate(enrichedEvent);
 
             kafkaProducer.send(enrichedEvent);
             log.info("Kafka에 메시지 전송 완료: {}", enrichedEvent);
 
+        } catch (BowChatException e) {
+            sendError(
+                    session,
+                    e.getCode(),
+                    e.getMessage(),
+                    e.getStatus().value()
+
+            );
         } catch (Exception e) {
             log.error("WebSocket 메시지 처리 중 오류 발생: {}", e.getMessage());
+        }
+    }
+
+    private void sendError(WebSocketSession session, String code,
+                           String message, int status) {
+        try {
+            Map<String, Object> payload = Map.of(
+                    "type", "ERROR",
+                    "code", code,
+                    "message", message,
+                    "status", status
+            );
+
+            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(payload)));
+        } catch (IOException ex) {
+            log.error("WebSocket 에러 응답 전송 실패", ex);
         }
     }
 

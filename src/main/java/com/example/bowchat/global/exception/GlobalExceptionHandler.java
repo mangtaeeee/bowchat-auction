@@ -18,7 +18,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatusCode()).body(errorBody);
     }
 
-    // 필요 시 다른 예외도 추가 가능
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
         Map<String, String> errorBody = new HashMap<>();

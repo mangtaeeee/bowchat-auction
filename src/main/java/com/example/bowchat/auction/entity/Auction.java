@@ -52,7 +52,16 @@ public class Auction {
             throw new IllegalArgumentException("입찰가가 현재 최고가 이하입니다.");
         }
         this.currentPrice = amount;
-        this.winner     = bidder;
+        this.winner = bidder;
+    }
+
+    public void validateBid(Long bidderId, Long bidAmount) {
+        if (this.getProduct().getSeller().getId().equals(bidderId)) {
+            throw new AuctionException(AuctionErrorCode.SELLER_CANNOT_BID);
+        }
+        if (bidAmount <= this.getCurrentPrice()) {
+            throw new AuctionException(AuctionErrorCode.BID_TOO_LOW);
+        }
     }
 
     public boolean isClosed(LocalDateTime now) {

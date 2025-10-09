@@ -90,6 +90,12 @@
                 showParticipantCount(msg.participantCount);
             }
 
+            if (msg.type === 'ERROR') {
+                console.warn(`[오류] code=${msg.code}, status=${msg.status}`);
+                alert(`⚠️ ${msg.message}`);
+                return; // ❗ 다른 메시지 로직은 무시
+            }
+
             if (msg.type === 'AUCTION_END') {
                 document.getElementById('bidInputContainer').style.display = 'none';
             }

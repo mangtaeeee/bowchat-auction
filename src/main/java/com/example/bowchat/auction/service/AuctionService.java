@@ -40,9 +40,6 @@ public class AuctionService {
                 .orElseThrow( ()-> new ResponseStatusException(HttpStatus.NOT_FOUND, "경매를 찾을 수 없습니다."));
         User bidder = userService.findById(userId);
 
-        validateBidderIsNotSeller(auction, bidder);
-        validateBidAmountIsHigher(bidAmount, auction);
-
         auction.placeBid(bidder, bidAmount, LocalDateTime.now());
         auctionRepository.save(auction);
         saveBid(bidAmount, auction, bidder);
@@ -56,19 +53,6 @@ public class AuctionService {
         chatProducer.send(ChatEventFactory.auctionBid(auctionId, userId, email, bidAmount));
     }
 
-    private static void validateBidAmountIsHigher(Long bidAmount, Auction auction) {
-        if (bidAmount <= auction.getCurrentPrice()) {
-            log.warn("입찰 금액이 현재가보다 낮거나 같습니다. current={}, bid={}", auction.getCurrentPrice(), bidAmount);
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "입찰 금액이 현재가보다 낮거나 같습니다.");
-        }
-    }
-
-    private static void validateBidderIsNotSeller(Auction auction, User bidder) {
-        if (auction.getProduct().getSeller().getId().equals(bidder.getId())) {
-            log.warn("판매자는 자신의 상품에 입찰할 수 없습니다. userId={}", bidder.getId());
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "판매자는 자신의 상품에 입찰할 수 없습니다.");
-        }
-    }
 
     public List<AuctionResponse> getAllAuctions() {
         return auctionRepository.findAll().stream()
