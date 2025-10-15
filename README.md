@@ -100,6 +100,22 @@ Auction 엔티티에 @Version을 적용했습니다.
 → **DB 커밋 단계에서 충돌 감지 및 자동 재시도**
 → 트랜잭션 충돌 시 마지막 입찰만 반영되어 데이터 정합성 유지
 
+---
+
+## Kafka 실패 처리 (DLQ 복구 구조)
+- **Kafka DefaultErrorHandler + DeadLetterPublishingRecoverer**를 적용해
+메시지 처리 중 예외가 발생하면 **최대 2회 재시도 후 DLQ(Dead Letter Queue)** 로 전송되도록 구성했습니다.
+- .DLT 토픽으로 전송된 메시지는 이후 별도의 모니터링/재처리 컨슈머가 분석 및 복구 처리합니다.
+이를 통해 Kafka Consumer 장애나 일시적 DB 예외 상황에서도
+메시지 유실 없이 복구 가능한 안정적 스트리밍 구조를 확보했습니다.
+예시 로그
+
+```java
+WARN  KafkaConsumerConfig : DLQ 전송: topic=auction-bid.DLT, reason=OptimisticLockingFailureException
+INFO  KafkaConsumerConfig : Kafka 재시도 1회 실패: key=AUCTION:1
+```
+---
+
 ## 테스트 코드 자동화 (Copilot Integration)
 
 프로젝트의 테스트 품질 및 생산성 향상을 위해 **GitHub Copilot Custom Instructions** 기반의  
