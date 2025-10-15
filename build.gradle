@@ -71,6 +71,11 @@ dependencies {
 	implementation 'org.springframework.kafka:spring-kafka'
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.mockito:mockito-core:5.2.0'
+	testImplementation 'org.mockito:mockito-junit-jupiter:5.2.0'
+	testImplementation 'org.assertj:assertj-core:3.24.2'
 }
 
 tasks.named('test') {
