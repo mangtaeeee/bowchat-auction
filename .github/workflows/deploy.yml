@@ -29,28 +29,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-
-
-      - name: Debug — show file list
-        run: | 
-          pwd
-          ls -R src/main/resources
-
-      - name: Set Env variables
-        uses: microsoft/variable-substitution@v1
-        with:
-          files: src/main/resources/application-prod.yml
-        env:
-          DB_USERNAME: ${{ secrets.POSTGRES_USER }}
-          DB_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
-          SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          KAKAO_CLIENT_ID: ${{ secrets.KAKAO_CLIENT_ID }}
-          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
-
       - name: Build Spring Boot JAR (skip tests)
         run: ./gradlew bootJar -x test
 
@@ -72,8 +50,29 @@ jobs:
           script: |
             set -e
             cd ${{ env.PROJECT_DIR }}
-
             echo "EC2 연결 완료"
+
+            # 환경변수 파일 (.env) 생성
+            cat > .env <<EOF
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+            AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
+            AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
+            MONGODB_URI=${{ secrets.MONGODB_URI }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}
+            KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}
+            EOF
+
+            echo ".env 파일 생성 완료"
+
+            #Docker Compose 실행
             docker compose down || true
             docker compose up -d --build
-            echo " 배포 완료"
+
+            echo "배포 완료 — Docker Compose 정상 실행됨"
+
+            # .env 보안상 삭제
+            rm -f .env
+            echo ".env 파일 삭제 완료"
