@@ -74,5 +74,6 @@ jobs:
             echo "배포 완료 — Docker Compose 정상 실행됨"
 
             # .env 보안상 삭제
+            sleep 5
             rm -f .env
             echo ".env 파일 삭제 완료"
