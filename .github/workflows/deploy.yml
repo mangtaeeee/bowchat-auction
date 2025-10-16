@@ -54,8 +54,8 @@ jobs:
 
             # 환경변수 파일 생성
             cat > .env <<EOF
-            POSTGRES_USER=${{ secrets.DB_USERNAME }}
-            POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }}
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
             POSTGRES_DB=bowchat
             REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
             AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
