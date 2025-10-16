@@ -13,6 +13,7 @@ env:
   EC2_USER: ubuntu
   EC2_KEY: ${{ secrets.EC2_SSH_KEY }}       # .pem 파일 내용 (Secrets에 저장)
   PROJECT_DIR: /home/ubuntu/bowchat
+  JAR_NAME: bowchat-0.0.1-SNAPSHOT.jar
 
 jobs:
   deploy:
