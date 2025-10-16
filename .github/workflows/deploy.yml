@@ -29,7 +29,13 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # ✅ 이 단계 추가 — application-prod.yml 안의 ${} 값 치환
+
+
+      - name: Debug — show file list
+        run: | 
+          pwd
+          ls -R src/main/resources
+
       - name: Set Env variables
         uses: microsoft/variable-substitution@v1
         with:
