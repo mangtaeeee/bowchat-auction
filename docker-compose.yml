@@ -92,6 +92,7 @@ services:
       - CLOUD_AWS_CREDENTIALS_ACCESSKEY=${AWS_ACCESS_KEY}
       - CLOUD_AWS_CREDENTIALS_SECRETKEY=${AWS_SECRET_KEY}
       - CLOUD_AWS_REGION_STATIC=ap-northeast-2
+      - CLOUD_AWS_S3_BUCKET=bowchat-bucket-name
     ports:
       - "8080:8080"
     networks:
