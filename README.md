@@ -172,3 +172,24 @@ kafka-topics --create \
   --partitions 3 \
   --topic auction-bid
 ```
+
+---
+
+## 배포 및 인프라 구성
+
+- AWS EC2 (t3.small) 환경에 Docker Compose 기반으로 배포
+- 서비스 구성요소:
+  - **Spring Boot 애플리케이션**
+  - **Kafka / Zookeeper / Redis / PostgreSQL / MongoDB** (모두 Docker Container로 구동)
+- **GitHub Actions → EC2 자동 배포 파이프라인** 구축:
+  - main 브랜치 푸시 시 자동 빌드, Docker Compose 재시작
+  - `.env` 자동 생성 및 보안 삭제 처리
+ 
+  
+### 구성도
+Developer → GitHub Actions → EC2 (Docker Compose)
+                              ↳ bowchat-app
+                              ↳ postgres
+                              ↳ redis
+                              ↳ kafka
+                              ↳ mongodb
