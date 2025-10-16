@@ -73,8 +73,8 @@ file:
 cloud:
   aws:
     credentials:
-      access-key: ${AWS_ACCESS_KEY}
-      secret-key: ${SECRET_KEY}
+      access-key: ${CLOUD_AWS_CREDENTIALS_ACCESSKEY}
+      secret-key: ${CLOUD_AWS_CREDENTIALS_SECRETKEY}
     region:
       static: ap-southeast-2
     s3:

@@ -95,6 +95,8 @@ services:
       - CLOUD_AWS_S3_BUCKET=bowchat-bucket-name
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
+      - KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
     ports:
       - "8080:8080"
     networks:
