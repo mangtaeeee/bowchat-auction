@@ -19,8 +19,10 @@ public class ChatProducer {
     // Kafka에 채팅 이벤트를 전송하는 메서드
     public void send(ChatEvent chatEvent) {
         String topic = chatEvent.type().getTopicName();
+        String key   = chatEvent.partitionKey();
 
-        CompletableFuture<SendResult<String, ChatEvent>> future = kafkaTemplate.send(topic, chatEvent);
+        CompletableFuture<SendResult<String, ChatEvent>> future =
+                kafkaTemplate.send(topic, key, chatEvent);
         future.whenComplete((stringChatEventSendResult, throwable) ->
         {
             if (throwable != null) {

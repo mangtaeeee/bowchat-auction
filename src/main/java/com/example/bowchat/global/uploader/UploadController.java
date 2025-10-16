@@ -18,7 +18,7 @@ import java.io.File;
 @Slf4j
 public class UploadController {
 
-    private final LocalImageUploader imageUploader;
+    private final S3ImageUploader imageUploader;
 
     @PostMapping
     public ResponseEntity<?> upload(@RequestParam("file") MultipartFile multipartFile) {

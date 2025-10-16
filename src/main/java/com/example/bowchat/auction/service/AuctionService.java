@@ -13,6 +13,7 @@ import com.example.bowchat.user.entity.User;
 import com.example.bowchat.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,19 +36,45 @@ public class AuctionService {
 
     @Transactional
     public void placeBid(Long auctionId, Long userId, Long bidAmount) {
+        int maxRetries = 3; // 낙관적 락 충돌 시 최대 재시도 횟수
 
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                doPlaceBid(auctionId, userId, bidAmount);
+                return; // 성공 시 반복 종료
+            } catch (OptimisticLockingFailureException e) {
+                log.warn("동시 입찰 감지 - 경매ID={}, 입찰자ID={}, 재시도 {}/{}", auctionId, userId, attempt, maxRetries);
+                try {
+                    Thread.sleep(10); // 짧은 대기 (동시 트랜잭션 정리용)
+                } catch (InterruptedException ignored) {}
+            }
+        }
+
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "입찰 충돌이 발생했습니다. 잠시 후 다시 시도해주세요.");
+    }
+
+    @Transactional
+    protected void doPlaceBid(Long auctionId, Long userId, Long bidAmount) {
         Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow( ()-> new ResponseStatusException(HttpStatus.NOT_FOUND, "경매를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "경매를 찾을 수 없습니다."));
+
         User bidder = userService.findById(userId);
 
+        // 경매 유효성 검증
+        auction.validateBid(userId, bidAmount);
+
+        // 실제 입찰 반영
         auction.placeBid(bidder, bidAmount, LocalDateTime.now());
         auctionRepository.save(auction);
-        saveBid(bidAmount, auction, bidder);
-        log.info("현재가={}, 입찰가={}", auction.getCurrentPrice(), bidAmount);
-        sendBroadCast(auction.getId(), bidder.getId(), bidder.getEmail(), bidAmount);
 
-        log.info("경매 입찰 성공: 경매 ID={}, 입찰자 ID={}, 입찰 금액={}", auctionId, userId, bidAmount);
+        saveBid(bidAmount, auction, bidder);
+        log.info("입찰 완료 - 현재가={}, 입찰가={}, 경매ID={}, 입찰자={}", auction.getCurrentPrice(), bidAmount, auctionId, userId);
+
+        // 입찰 이벤트 브로드캐스트
+        sendBroadCast(auction.getId(), bidder.getId(), bidder.getEmail(), bidAmount);
+        log.info("경매 입찰 성공: auctionId={}, userId={}, bidAmount={}", auctionId, userId, bidAmount);
     }
+
 
     private void sendBroadCast(Long auctionId, Long userId, String email, Long bidAmount) {
         chatProducer.send(ChatEventFactory.auctionBid(auctionId, userId, email, bidAmount));

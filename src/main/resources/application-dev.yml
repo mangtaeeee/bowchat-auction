@@ -83,3 +83,15 @@ decorator:
 
 file:
   upload-dir: src/main/resources/static/uploads
+
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${SECRET_KEY}
+    region:
+      static: ap-southeast-2
+    s3:
+      bucket: bowchat-image-bucket
+    stack:
+      auto: false
