@@ -9,9 +9,9 @@ permissions:
 
 env:
   APP_NAME: bowchat
-  EC2_HOST: ${{ secrets.EC2_HOST }}         # EC2 퍼블릭 IP
+  EC2_HOST: ${{ secrets.EC2_HOST }}
   EC2_USER: ubuntu
-  EC2_KEY: ${{ secrets.EC2_SSH_KEY }}       # .pem 파일 내용 (Secrets에 저장)
+  EC2_KEY: ${{ secrets.EC2_SSH_KEY }}
   PROJECT_DIR: /home/ubuntu/bowchat
   JAR_NAME: bowchat-0.0.1-SNAPSHOT.jar
 
@@ -38,7 +38,7 @@ jobs:
           host: ${{ env.EC2_HOST }}
           username: ${{ env.EC2_USER }}
           key: ${{ env.EC2_KEY }}
-          source: "./build/libs/${{ env.JAR_NAME }}, ./docker-compose.yml, ./Dockerfile"
+          source: "./build/libs/${{ env.JAR_NAME }}, ./docker-compose.yml, ./Dockerfile, ./src/main/resources/application-prod.yml"
           target: "${{ env.PROJECT_DIR }}"
 
       - name: Connect to EC2 and Deploy via Docker Compose
@@ -50,29 +50,29 @@ jobs:
           script: |
             set -e
             cd ${{ env.PROJECT_DIR }}
+            echo "EC2 연결 완료"
 
-            echo "EC2 연결 및 디렉토리 이동 완료"
-
-            # 환경변수 파일 생성
+            # 환경변수 파일 (.env) 생성
             cat > .env <<EOF
             POSTGRES_USER=${{ secrets.POSTGRES_USER }}
             POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-            POSTGRES_DB=bowchat
             REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
             AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
             AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
             MONGODB_URI=${{ secrets.MONGODB_URI }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
+            KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}
+            KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}
             EOF
 
             echo ".env 파일 생성 완료"
 
-            # 기존 컨테이너 종료 및 새로 빌드
+            #Docker Compose 실행
             docker compose down || true
             docker compose up -d --build
 
-            echo "배포 완료 — Docker Compose 재시작 성공"
+            echo "배포 완료 — Docker Compose 정상 실행됨"
 
-            # 보안 강화: .env 삭제
+            # .env 보안상 삭제
             rm -f .env
             echo ".env 파일 삭제 완료"
