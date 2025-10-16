@@ -2,8 +2,17 @@ spring:
   config:
     activate:
       on-profile: dev
-    import:
-      - classpath:application-dev.yml
+    import: classpath:application-dev.yml
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+    import: classpath:application-prod.yml
+
+---
+spring:
   jpa:
     hibernate:
       ddl-auto: update

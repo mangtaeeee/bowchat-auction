@@ -1,0 +1,87 @@
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: chat-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.example.bowchat.kafka, com.example.bowchat.chatmessage.dto
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.example.bowchat.kafka.ChatEvent
+
+  thymeleaf:
+    cache: false
+
+  devtools:
+    restart.enabled: true
+    livereload.enabled: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: http://52.64.172.160:8080/login/oauth2/code/kakao
+            scope:
+              - profile_nickname
+              - account_email
+            client-name: Kakao
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expiration: 3600000  # 1시간
+    refresh-token-expiration: 1209600000 # 14일
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bowchat
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+    properties:
+      hibernate.default_batch_fetch_size: 50
+
+  data:
+    mongodb.uri: ${MONGODB_URI}
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+      database: 0
+
+decorator:
+  datasource:
+    p6spy.enable-logging: true
+
+file:
+  upload-dir: src/main/resources/static/uploads
+
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${SECRET_KEY}
+    region:
+      static: ap-southeast-2
+    s3:
+      bucket: bowchat-image-bucket
+    stack:
+      auto: false
