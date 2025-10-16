@@ -1,0 +1,77 @@
+name: Deploy BowChat to EC2
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+env:
+  APP_NAME: bowchat
+  EC2_HOST: ${{ secrets.EC2_HOST }}         # EC2 퍼블릭 IP
+  EC2_USER: ubuntu
+  EC2_KEY: ${{ secrets.EC2_SSH_KEY }}       # .pem 파일 내용 (Secrets에 저장)
+  PROJECT_DIR: /home/ubuntu/bowchat
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build Spring Boot JAR (skip tests)
+        run: ./gradlew bootJar -x test
+
+      - name: Transfer project files to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
+          key: ${{ env.EC2_KEY }}
+          source: "./build/libs/*.jar, ./docker-compose.yml"
+          target: "${{ env.PROJECT_DIR }}"
+
+      - name: Connect to EC2 and Deploy via Docker Compose
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
+          key: ${{ env.EC2_KEY }}
+          script: |
+            set -e
+            cd ${{ env.PROJECT_DIR }}
+
+            echo "EC2 연결 및 디렉토리 이동 완료"
+
+            # 환경변수 파일 생성
+            cat > .env <<EOF
+            POSTGRES_USER=${{ secrets.DB_USERNAME }}
+            POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }}
+            POSTGRES_DB=bowchat
+            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+            AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
+            AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
+            MONGODB_URI=${{ secrets.MONGODB_URI }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            EOF
+
+            echo ".env 파일 생성 완료"
+
+            # 기존 컨테이너 종료 및 새로 빌드
+            docker compose down || true
+            docker compose up -d --build
+
+            echo "배포 완료 — Docker Compose 재시작 성공"
+
+            # 보안 강화: .env 삭제
+            rm -f .env
+            echo ".env 파일 삭제 완료"
