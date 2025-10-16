@@ -187,9 +187,11 @@ kafka-topics --create \
  
   
 ### 구성도
+```
 Developer → GitHub Actions → EC2 (Docker Compose)
                               ↳ bowchat-app
                               ↳ postgres
                               ↳ redis
                               ↳ kafka
                               ↳ mongodb
+```
