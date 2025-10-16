@@ -89,6 +89,58 @@ PostgreSQL → 사용자, 상품, 메타데이터 관리
 
 ---
 
+### 왜 Kafka와 Optimistic Lock을 함께 사용했는가?
+- **Kafka 파티션 기반 순차 처리 (1차 동시성 제어)**
+auctionId를 파티션 키로 지정해 동일 경매의 입찰 이벤트가 항상 같은 파티션에서 순서대로 처리되도록 설계했습니다.
+→ **경매 단위로 논리적 락 효과 확보**, Race Condition 방지
+
+- **JPA 낙관적 락(@Version) 기반 정합성 보장 (2차 데이터 보호)**
+Kafka가 순서를 보장하더라도, Consumer 재시작·중복 메시지 등으로 인한 커밋 충돌에 대비해
+Auction 엔티티에 @Version을 적용했습니다.
+→ **DB 커밋 단계에서 충돌 감지 및 자동 재시도**
+→ 트랜잭션 충돌 시 마지막 입찰만 반영되어 데이터 정합성 유지
+
+---
+
+## Kafka 실패 처리 (DLQ 복구 구조)
+- **Kafka DefaultErrorHandler + DeadLetterPublishingRecoverer**를 적용해
+메시지 처리 중 예외가 발생하면 **최대 2회 재시도 후 DLQ(Dead Letter Queue)** 로 전송되도록 구성했습니다.
+- .DLT 토픽으로 전송된 메시지는 이후 별도의 모니터링/재처리 컨슈머가 분석 및 복구 처리합니다.
+이를 통해 Kafka Consumer 장애나 일시적 DB 예외 상황에서도
+메시지 유실 없이 복구 가능한 안정적 스트리밍 구조를 확보했습니다.
+예시 로그
+
+```java
+WARN  KafkaConsumerConfig : DLQ 전송: topic=auction-bid.DLT, reason=OptimisticLockingFailureException
+INFO  KafkaConsumerConfig : Kafka 재시도 1회 실패: key=AUCTION:1
+```
+---
+
+## 테스트 코드 자동화 (Copilot Integration)
+
+프로젝트의 테스트 품질 및 생산성 향상을 위해 **GitHub Copilot Custom Instructions** 기반의  
+**테스트 코드 자동화 환경**을 구축했습니다.
+
+- `copilot-instructions.md`를 작성하여 **한글 주석(`// 테스트:`)** 기반으로  
+  JUnit + Mockito 테스트 메서드를 자동 완성할 수 있는 구조를 설계했습니다.
+- 반복적인 단위 테스트 작성 속도를 단축하고,
+  서비스 로직의 테스트 커버리지와 품질 일관성을 향상시켰습니다.
+- `feat: copilot 을 통한 테스트 메서드 자동화 프롬프트 추가` 커밋으로 관리 중.
+
+**예시**
+```java
+// 테스트: 회원가입 성공 시 userRepository.save() 호출된다
+@Test
+void 회원가입_성공시_저장된다() {
+    // 주어진 상황
+    // 실행
+    // 결과 확인
+}
+
+```
+
+---
+
 ### 기술 구조 의도 요약
 | 구분 | 기존 | 개선 후 | 개선 효과 |
 |------|------|----------|------------|
