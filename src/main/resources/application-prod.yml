@@ -1,6 +1,6 @@
 spring:
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: kafka:29092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -17,10 +17,6 @@ spring:
   thymeleaf:
     cache: false
 
-  devtools:
-    restart.enabled: true
-    livereload.enabled: true
-
   security:
     oauth2:
       client:
@@ -35,7 +31,6 @@ spring:
               - profile_nickname
               - account_email
             client-name: Kakao
-            provider: kakao
         provider:
           kakao:
             authorization-uri: https://kauth.kakao.com/oauth/authorize
@@ -45,17 +40,17 @@ spring:
 
   jwt:
     secret: ${JWT_SECRET}
-    access-token-expiration: 3600000  # 1시간
-    refresh-token-expiration: 1209600000 # 14일
+    access-token-expiration: 3600000
+    refresh-token-expiration: 1209600000
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/bowchat
+    url: jdbc:postgresql://postgres:5432/bowchat
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     open-in-view: false
     properties:
       hibernate.default_batch_fetch_size: 50
@@ -63,8 +58,8 @@ spring:
   data:
     mongodb.uri: ${MONGODB_URI}
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
+      host: redis
+      port: 6379
       password: ${REDIS_PASSWORD}
       database: 0
 
@@ -73,7 +68,7 @@ decorator:
     p6spy.enable-logging: true
 
 file:
-  upload-dir: src/main/resources/static/uploads
+  upload-dir: /app/uploads
 
 cloud:
   aws:
