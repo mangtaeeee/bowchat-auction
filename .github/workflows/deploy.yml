@@ -37,7 +37,7 @@ jobs:
           host: ${{ env.EC2_HOST }}
           username: ${{ env.EC2_USER }}
           key: ${{ env.EC2_KEY }}
-          source: "./build/libs/*.jar, ./docker-compose.yml"
+          source: "./build/libs/${{ env.JAR_NAME }}, ./docker-compose.yml, ./Dockerfile"
           target: "${{ env.PROJECT_DIR }}"
 
       - name: Connect to EC2 and Deploy via Docker Compose
