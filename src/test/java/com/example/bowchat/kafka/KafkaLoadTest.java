@@ -47,4 +47,41 @@ public class KafkaLoadTest {
         long end = System.currentTimeMillis();
         System.out.println("총 처리 시간(ms): " + (end - start));
     }
+
+    //카프카 동시 3만건 요청 테스트
+    @Test
+    void send30000MessagesConcurrently() throws Exception {
+        int totalMessages = 30000;
+        int threadCount = 10;
+        int messagesPerThread = totalMessages / threadCount;
+
+        Thread[] threads = new Thread[threadCount];
+        long start = System.currentTimeMillis();
+
+        for (int t = 0; t < threadCount; t++) {
+            threads[t] = new Thread(() -> {
+                for (int i = 0; i < messagesPerThread; i++) {
+                    long messageId = (long)(Math.random() * totalMessages);
+                    ChatEvent event = new ChatEvent(
+                            1L,
+                            messageId,
+                            "User" + messageId,
+                            MessageType.CHAT,
+                            "동시 테스트 메시지 " + messageId,
+                            Instant.now().toEpochMilli()
+                    );
+                    kafkaTemplate.send("chat-message", event);
+                }
+            });
+            threads[t].start();
+        }
+
+        for (Thread thread : threads) {
+            thread.join();
+        }
+
+        long end = System.currentTimeMillis();
+        System.out.println("총 처리 시간(ms): " + (end - start));
+    }
+
 }
