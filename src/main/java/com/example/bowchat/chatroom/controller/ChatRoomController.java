@@ -40,6 +40,7 @@ public class ChatRoomController {
             @RequestParam Long productId,
             @AuthenticationPrincipal PrincipalDetails principal
     ) {
+        log.info("ChatRoom create 요청 ");
         return ResponseEntity.ok(chatRoomService.createOrGetChatRoom(
                 type,
                 productId,
