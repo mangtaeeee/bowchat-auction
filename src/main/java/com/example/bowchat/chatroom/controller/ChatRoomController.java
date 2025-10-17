@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Objects;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/chat/rooms")
@@ -40,12 +42,17 @@ public class ChatRoomController {
             @RequestParam Long productId,
             @AuthenticationPrincipal PrincipalDetails principal
     ) {
-        log.info("ChatRoom create 요청 ");
-        return ResponseEntity.ok(chatRoomService.createOrGetChatRoom(
+        log.info("ChatRoom create 요청 - type={}, productId={}, user={}",
+                type, productId, principal != null ? principal.getUsername() : "null");
+
+        ChatRoomResponse response = chatRoomService.createOrGetChatRoom(
                 type,
                 productId,
-                principal.getUser()
-        ));
+                Objects.requireNonNull(principal).getUser()
+        );
+
+        log.info("ChatRoom 생성 완료 → {}", response);
+        return ResponseEntity.ok(response);
     }
 
 
