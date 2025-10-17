@@ -164,13 +164,13 @@
 
             if (product.isSeller) {
                 // 판매자 - 경매 채팅방 입장 (POST로 통일)
-                createChatButton("대화 중인 채팅방 보기", "AUCTION", "POST");
+                createChatButton("대화 중인 채팅방 보기", product.saleType, "POST");
             } else {
                 // 구매자
                 if (product.saleType === 'AUCTION') {
-                    createChatButton("경매 채팅 참여", "AUCTION", "POST");
+                    createChatButton("경매 채팅 참여", product.saleType, "POST");
                 } else {
-                    createChatButton("채팅 문의", "DIRECT", "POST");
+                    createChatButton("채팅 문의", product.saleType, "POST");
                 }
             }
 
