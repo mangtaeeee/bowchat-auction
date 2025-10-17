@@ -87,6 +87,7 @@ public class ChatRoomService {
     public <I> ChatRoomResponse createOrGetChatRoom(
             ChatRoomType type, I identifier, User user
     ) {
+        log.info("채팅방 생성 요청: type={}, identifier={}", type, identifier);
         @SuppressWarnings("unchecked")
         ChatRoomCreator<I> creator = (ChatRoomCreator<I>) creatorMap.get(type);
         if (creator == null) {
