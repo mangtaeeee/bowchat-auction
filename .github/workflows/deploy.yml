@@ -38,7 +38,7 @@ jobs:
           host: ${{ env.EC2_HOST }}
           username: ${{ env.EC2_USER }}
           key: ${{ env.EC2_KEY }}
-          source: "./build/libs/${{ env.JAR_NAME }}, ./docker-compose.yml, ./Dockerfile, ./src/main/resources/application-prod.yml"
+          source: "./build/libs/${{ env.JAR_NAME }}, ./docker-compose.yml, ./Dockerfile, ./src/main/resources/application-prod.yml","./prometheus.yml"
           target: "${{ env.PROJECT_DIR }}"
 
       - name: Connect to EC2 and Deploy via Docker Compose
