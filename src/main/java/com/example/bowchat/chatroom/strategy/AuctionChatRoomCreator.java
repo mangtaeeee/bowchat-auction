@@ -17,7 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class AuctionChatRoomCreator implements ChatRoomCreator<Long> {
     private final ChatRoomRepository repo;
-    private final AuctionRepository auctionRepo;
+    private final AuctionRepository auctionRepository;
 
     @Override
     public ChatRoomType roomType() {
@@ -27,13 +27,12 @@ public class AuctionChatRoomCreator implements ChatRoomCreator<Long> {
 
     @Override
     @Transactional
-    public ChatRoomResponse createOrGet(Long auctionId, User user) {
-        Auction auction = auctionRepo.findById(auctionId)
+    public ChatRoomResponse createOrGet(Long productId, User user) {
+        Auction auction = auctionRepository.findByProductId(productId)
                 .orElseThrow( ()-> new ResponseStatusException(HttpStatus.NOT_FOUND, "경매를 찾을 수 없습니다."));
-        Long productId = auction.getProduct().getId();
 
         // 이미 만들어진 채팅방이 있으면 리턴
-        return repo.findByTypeAndProduct_Id(roomType(), productId)
+        return repo.findByTypeAndProduct_Id(roomType(), auction.getProduct().getId())
                 .map(ChatRoomResponse::from)
                 .orElseGet(() -> {
                     // 새 방 생성
