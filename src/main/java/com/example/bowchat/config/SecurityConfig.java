@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**", "/user/signup", "/uploads/**",
                                 "/oauth2/**","/view/**", "/h2-console/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().authenticated()
                 )
