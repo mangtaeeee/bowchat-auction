@@ -101,6 +101,80 @@ services:
       - "8080:8080"
     networks:
       - bowchat-net
+  prometheus:
+    image: prom/prometheus:v2.55.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    networks:
+      - bowchat-net
+    depends_on:
+      - app
+      - postgres
+      - redis
+      - kafka
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - bowchat-net
+    depends_on:
+      - prometheus
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: postgres-exporter
+    environment:
+      DATA_SOURCE_URI: "postgres:5432/bowchat?sslmode=disable"
+      DATA_SOURCE_USER: "${POSTGRES_USER}"
+      DATA_SOURCE_PASS: "${POSTGRES_PASSWORD}"
+      PG_EXPORTER_EXTEND_QUERY_PATH: /etc/postgres_exporter/queries.yaml
+    networks:
+      - bowchat-net
+    depends_on:
+      - postgres
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.63.0
+    container_name: redis-exporter
+    command:
+      - '--redis.addr=redis:6379'
+      - '--redis.password=${REDIS_PASSWORD}'
+    networks:
+      - bowchat-net
+    depends_on:
+      - redis
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.7.0
+    container_name: kafka-exporter
+    command:
+      - '--kafka.server=kafka:29092'
+    networks:
+      - bowchat-net
+    depends_on:
+      - kafka
+
+  # 필요 시 Mongo 메트릭도 수집
+  # mongodb-exporter:
+  #   image: percona/mongodb_exporter:0.40.0
+  #   container_name: mongodb-exporter
+  #   command:
+  #     - '--mongodb.uri=mongodb://mongodb:27017'
+  #   networks:
+  #     - bowchat-net
+  #   depends_on:
+  #     - mongodb
 
 networks:
   bowchat-net:
