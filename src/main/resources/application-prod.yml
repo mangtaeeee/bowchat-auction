@@ -2,17 +2,31 @@ spring:
   kafka:
     bootstrap-servers: kafka:29092
     producer:
+      acks: all
+      linger-ms: 5
+      batch-size: 32768
+      buffer-memory: 67108864
+      compression-type: lz4
+      retries: 3
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     consumer:
       group-id: chat-group
       auto-offset-reset: earliest
+      enable-auto-commit: false
+      max-poll-records: 1000
+      fetch-min-size: 1048576
+      fetch-max-wait: 1000
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: com.example.bowchat.kafka, com.example.bowchat.chatmessage.dto
         spring.json.use.type.headers: false
         spring.json.value.default.type: com.example.bowchat.kafka.ChatEvent
+    listener:
+      ack-mode: batch
+      concurrency: 4
+      poll-timeout: 1500
 
   thymeleaf:
     cache: false
