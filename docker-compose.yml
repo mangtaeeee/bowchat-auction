@@ -28,6 +28,11 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "nc -z localhost 9092" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - bowchat-net
 
@@ -160,10 +165,11 @@ services:
     container_name: kafka-exporter
     command:
       - '--kafka.server=kafka:9092'
+    depends_on:
+      kafka:
+        condition: service_healthy
     networks:
       - bowchat-net
-    depends_on:
-      - kafka
 
   # 필요 시 Mongo 메트릭도 수집
   # mongodb-exporter:
