@@ -159,7 +159,7 @@ services:
     image: danielqsj/kafka-exporter:v1.7.0
     container_name: kafka-exporter
     command:
-      - '--kafka.server=kafka:29092'
+      - '--kafka.server=kafka:9092'
     networks:
       - bowchat-net
     depends_on:
