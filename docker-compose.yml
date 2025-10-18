@@ -28,6 +28,15 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - ./kafka-init.sh:/usr/local/bin/kafka-init.sh  # 초기화 스크립트 연결
+    command: >
+      bash -c "
+        /etc/confluent/docker/run &
+        sleep 10 &&
+        bash /usr/local/bin/kafka-init.sh &&
+        wait
+      "
     healthcheck:
       test: [ "CMD", "bash", "-c", "nc -z localhost 9092" ]
       interval: 10s
@@ -131,6 +140,8 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./grafana-data:/var/lib/grafana
     networks:
       - bowchat-net
     depends_on:

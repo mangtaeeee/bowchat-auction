@@ -42,7 +42,7 @@ jobs:
           ./docker-compose.yml, 
           ./Dockerfile, 
           ./src/main/resources/application-prod.yml,
-          ./prometheus.yml"
+          ./prometheus.yml, ./kafka-init.sh"
           target: "${{ env.PROJECT_DIR }}"
 
       - name: Connect to EC2 and Deploy via Docker Compose
