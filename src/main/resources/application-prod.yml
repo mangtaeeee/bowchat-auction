@@ -47,6 +47,11 @@ spring:
     url: jdbc:postgresql://postgres:5432/bowchat
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 30
+      minimum-idle: 10
+      idle-timeout: 60000
+      max-lifetime: 1800000
 
   jpa:
     hibernate:
@@ -92,3 +97,7 @@ management:
   metrics:
     tags:
       application: "bowchat"
+server:
+  tomcat:
+    threads:
+      max: 400
