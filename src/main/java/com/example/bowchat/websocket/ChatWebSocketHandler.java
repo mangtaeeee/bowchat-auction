@@ -5,6 +5,7 @@ import com.example.bowchat.kafka.ChatEvent;
 import com.example.bowchat.kafka.ChatProducer;
 import com.example.bowchat.kafka.manager.ChatEventValidatorManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -31,21 +32,21 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
 
     @Override
-    public void afterConnectionEstablished(WebSocketSession session) {
+    public void afterConnectionEstablished(@NonNull WebSocketSession session) {
         Long roomId = extractRoomId(session);
         sessionManager.addSession(roomId, session);
         log.info("WebSocket 연결됨 - roomId={}, sessionId={}", roomId, session.getId());
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+    public void afterConnectionClosed(@NonNull WebSocketSession session, @NonNull CloseStatus status) {
         Long roomId = extractRoomId(session);
         sessionManager.removeSession(roomId, session);
         log.info("WebSocket 연결 종료 - roomId={}, sessionId={}", roomId, session.getId());
     }
 
     @Override
-    protected void handleTextMessage(WebSocketSession session, TextMessage message) {
+    protected void handleTextMessage(@NonNull WebSocketSession session, @NonNull TextMessage message) {
         try {
             Long roomId = extractRoomId(session);
 
