@@ -87,10 +87,14 @@ services:
       dockerfile: Dockerfile
     container_name: bowchat-app
     depends_on:
-      - postgres
-      - redis
-      - kafka
-      - mongodb
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_started
+      mongodb:
+        condition: service_started
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/bowchat
