@@ -27,7 +27,6 @@ spring:
       ack-mode: batch
       concurrency: 4
       poll-timeout: 1500
-
   thymeleaf:
     cache: false
 
