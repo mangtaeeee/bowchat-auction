@@ -2,7 +2,7 @@
 set -e
 
 TOPIC_NAME="auction-bid"
-PARTITIONS=4
+PARTITIONS=6
 REPLICATION=1
 
 echo "Kafka topic initialization started..."

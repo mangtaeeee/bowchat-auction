@@ -14,9 +14,9 @@ spring:
       group-id: chat-group
       auto-offset-reset: earliest
       enable-auto-commit: false
-      max-poll-records: 1000
-      fetch-min-size: 1048576
-      fetch-max-wait: 1000
+      max-poll-records: 300  # 1000 → 300
+      fetch-min-size: 524288   # 1MB → 512KB
+      fetch-max-wait: 500     # 1000 → 500
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
@@ -25,7 +25,7 @@ spring:
         spring.json.value.default.type: com.example.bowchat.kafka.ChatEvent
     listener:
       ack-mode: batch
-      concurrency: 4
+      concurrency: 6  # 4 -> 6
       poll-timeout: 1500
   thymeleaf:
     cache: false
