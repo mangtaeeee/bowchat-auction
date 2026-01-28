@@ -25,7 +25,7 @@ spring:
         spring.json.value.default.type: com.example.bowchat.kafka.ChatEvent
     listener:
       ack-mode: batch
-      concurrency: 8  # 4 -> 8
+      concurrency: 6  # 4 -> 6
       poll-timeout: 1500
   thymeleaf:
     cache: false
