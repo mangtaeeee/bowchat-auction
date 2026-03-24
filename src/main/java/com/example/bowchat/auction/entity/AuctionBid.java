@@ -1,6 +1,5 @@
 package com.example.bowchat.auction.entity;
 
-import com.example.bowchat.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,9 +23,7 @@ public class AuctionBid {
     private Auction auction;
 
     // 누가 입찰했는지
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "BIDDER_ID", nullable = false)
-    private User bidder;
+    private Long bidder;
 
     // 입찰 금액
     @Column(nullable = false)

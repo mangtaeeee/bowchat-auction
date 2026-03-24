@@ -49,11 +49,11 @@ public class AuctionService {
         Long oldPrice = auction.getCurrentPrice();
 
         // 입찰 처리
-        auction.placeBid(bidder, bidAmount, LocalDateTime.now());
+        auction.placeBid(bidder.getId(), bidAmount, LocalDateTime.now());
         auctionRepository.save(auction);
 
         // 입찰 이력 저장
-        saveBidHistory(auction, bidder, bidAmount);
+        saveBidHistory(auction, bidder.getId(), bidAmount);
 
         // 로그
         log.info("입찰 완료: auctionId={}, userId={}, {}원 → {}원",
@@ -63,7 +63,7 @@ public class AuctionService {
         sendBroadCast(auction.getId(), bidder.getId(), bidder.getEmail(), bidAmount);
     }
 
-    private void saveBidHistory(Auction auction, User bidder, Long bidAmount) {
+    private void saveBidHistory(Auction auction, Long bidder, Long bidAmount) {
         auctionBidRepository.save(
                 AuctionBid.builder()
                         .auction(auction)
@@ -87,7 +87,7 @@ public class AuctionService {
     @Transactional
     public void startAuction(Long productId, LocalDateTime endTime) {
         Product product = productService.getProduct(productId);
-        Auction auction = Auction.of(product, endTime);
+        Auction auction = Auction.of(product.getId(), product.getStartingPrice(), endTime);
         auctionRepository.save(auction);
     }
 

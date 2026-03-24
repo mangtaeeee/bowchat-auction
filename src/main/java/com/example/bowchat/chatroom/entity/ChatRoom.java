@@ -1,6 +1,5 @@
 package com.example.bowchat.chatroom.entity;
 
-import com.example.bowchat.product.entity.Product;
 import com.example.bowchat.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -30,14 +29,9 @@ public class ChatRoom {
     @Column(nullable = false)
     private ChatRoomType type;
 
+    private Long product;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "PRODUCT_ID")
-    private Product product;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "OWNER_ID")
-    private User owner;
+    private Long owner;
 
     @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
