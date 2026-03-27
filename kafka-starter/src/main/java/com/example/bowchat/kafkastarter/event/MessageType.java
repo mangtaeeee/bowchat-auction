@@ -1,4 +1,4 @@
-package com.example.bowchat.chatmessage.entity;
+package com.example.bowchat.kafkastarter.event;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -17,4 +17,5 @@ public enum MessageType {
     FILE("chat-message");        // 파일 전송
 
     private final String topicName; // 카프카 토픽 이름
+
 }
