@@ -6,6 +6,8 @@ import com.example.userservice.entity.PrincipalDetails;
 import com.example.userservice.entity.ProviderType;
 import com.example.userservice.entity.Role;
 import com.example.userservice.entity.User;
+import com.example.userservice.event.UserCreatedEvent;
+import com.example.userservice.event.UserEventPublisher;
 import com.example.userservice.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
+    private final UserEventPublisher userEventPublisher;
 
     @Override
     @Transactional
@@ -59,7 +62,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .role(Role.USER)
                 .build();
         log.info("신규 사용자 등록: email={}, provider={}", newUser.getEmail(), provider);
-        return userRepository.save(newUser);
+        User savedUser = userRepository.save(newUser);
+
+        // 이벤트 발행 추가
+        userEventPublisher.publishUserCreatedEvent(UserCreatedEvent.of(savedUser));
+
+        return savedUser;
     }
 
 
