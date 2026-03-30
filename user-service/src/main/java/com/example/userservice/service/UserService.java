@@ -33,9 +33,4 @@ public class UserService {
                 UserCreatedEvent.of(user)
         );
     }
-
-    public User findById(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
-    }
 }

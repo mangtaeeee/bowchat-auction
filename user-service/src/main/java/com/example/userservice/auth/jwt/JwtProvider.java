@@ -1,7 +1,6 @@
 package com.example.userservice.auth.jwt;
 
 import com.example.userservice.entity.PrincipalDetails;
-import com.example.userservice.entity.ProviderType;
 import com.example.userservice.entity.User;
 import com.example.userservice.repository.UserRepository;
 import io.jsonwebtoken.Claims;
@@ -57,18 +56,12 @@ public class JwtProvider {
     //토큰에서 인증정보 꺼내기
     public Authentication getAuthentication(String token) {
         Claims claims = parseClaims(token);
-        String email = claims.getSubject();
-        String providerName = claims.get("provider", String.class);
+        Long userId = claims.get("userId", Long.class);
 
-        ProviderType provider = (providerName == null)
-                ? ProviderType.LOCAL
-                : ProviderType.valueOf(providerName);
-
-        User user = userRepository.findByEmailAndProvider(email, provider)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
         PrincipalDetails principal = new PrincipalDetails(user);
-
         return new UsernamePasswordAuthenticationToken(principal, token, principal.getAuthorities());
     }
 
