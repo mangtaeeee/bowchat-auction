@@ -38,12 +38,23 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            artifactId = 'kafka-strarter'
+            artifactId = 'kafka-starter'
             from components.java
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
         }
     }
 }
