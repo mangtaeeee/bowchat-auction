@@ -1,9 +1,9 @@
 package com.example.userservice.auth;
 
-import com.example.bowchat.user.auth.dto.AccessTokenResponse;
-import com.example.bowchat.user.auth.dto.AuthResponse;
-import com.example.bowchat.user.auth.service.AuthService;
-import com.example.bowchat.user.dto.LoginRequest;
+import com.example.userservice.auth.dto.AccessTokenResponse;
+import com.example.userservice.auth.dto.AuthResponse;
+import com.example.userservice.auth.service.AuthService;
+import com.example.userservice.dto.LoginRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

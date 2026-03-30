@@ -1,7 +1,6 @@
 package com.example.chatservice.dto;
 
 import com.example.chatservice.entity.ChatMessage;
-import com.example.chatservice.entity.MessageType;
 import lombok.Builder;
 
 @Builder

@@ -1,6 +1,5 @@
 package com.example.bowchat.chatroom.entity;
 
-import com.example.bowchat.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

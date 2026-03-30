@@ -22,15 +22,20 @@ configurations {
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
 
     implementation 'org.postgresql:postgresql:42.7.1'
 
     // Redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    // Kafka
+    implementation 'com.example.bowchat:kafka-starter:0.0.1-SNAPSHOT'
 
     // JPA
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -38,8 +43,6 @@ dependencies {
 
     // 비밀번호 암호화 (BCrypt)
     implementation 'org.springframework.security:spring-security-crypto'
-
-    implementation 'io.github.cdimascio:dotenv-java:3.0.0'
 
     //QueryDsl
     implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
@@ -57,10 +60,6 @@ dependencies {
     // security
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
-
-
-    // webSocket
-    implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
     // JWT
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'

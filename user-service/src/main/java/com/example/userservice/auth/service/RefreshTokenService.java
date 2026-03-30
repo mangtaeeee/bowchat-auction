@@ -1,6 +1,6 @@
 package com.example.userservice.auth.service;
 
-import com.example.bowchat.user.auth.repository.RefreshTokenRepository;
+import com.example.userservice.auth.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

@@ -5,7 +5,6 @@ import com.example.userservice.entity.ProviderType;
 import com.example.userservice.entity.User;
 import com.example.userservice.repository.UserRepository;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
@@ -29,29 +28,16 @@ public class JwtProvider {
         return Keys.hmacShaKeyFor(jwtProperties.getSecretKey().getBytes());
     }
 
-    // 로컬 로그인 시 Access Token 생성
-    public String generateToken(Authentication authentication) {
-        PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
+    // 이걸로 통일 - 로컬/SNS 둘 다 여기로
+    public String generateToken(User user) {
         return Jwts.builder()
-                .setSubject(principalDetails.getUsername())
+                .setSubject(user.getEmail())
+                .claim("userId", user.getId())
+                .claim("nickname", user.getNickname())
+                .claim("role", user.getRole().name())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiration()))
                 .signWith(getSigningKey())
                 .compact();
-    }
-
-    // SNS 로그인 시 Access Token 생성
-    public String generateToken(User user) {
-        JwtBuilder builder= Jwts.builder()
-                .setSubject(user.getEmail())
-                .claim("userId", user.getId())
-                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiration()))
-                .signWith(getSigningKey());
-
-        if (user.getProvider() != ProviderType.LOCAL) {
-            builder.claim("provider", user.getProvider().name());
-        }
-
-        return builder.compact();
     }
 
     // Refresh Token 생성

@@ -24,12 +24,11 @@ dependencyManagement {
 }
 
 dependencies {
-    api 'org.springframework.boot:spring-boot-autoconfigure'
+    compileOnly 'org.springframework.boot:spring-boot-autoconfigure'
     api 'org.springframework.kafka:spring-kafka'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
-
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     compileOnly 'org.slf4j:slf4j-api'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

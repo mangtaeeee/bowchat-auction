@@ -1,0 +1,204 @@
+version: '3.8'
+
+services:
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - bowchat-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - ./kafka-init.sh:/usr/local/bin/kafka-init.sh  # 초기화 스크립트 연결
+    command: >
+      bash -c "
+        /etc/confluent/docker/run &
+        sleep 10 &&
+        bash /usr/local/bin/kafka-init.sh &&
+        wait
+      "
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "nc -z localhost 9092" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bowchat-net
+
+  redis:
+    image: redis:7
+    container_name: redis
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    networks:
+      - bowchat-net
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      - POSTGRES_DB=bowchat
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - bowchat-net
+
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=bowchat
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - bowchat-net
+
+  app:
+    image: bowchat-app:latest
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: bowchat-app
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_started
+      mongodb:
+        condition: service_started
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/bowchat
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - SPRING_DATA_REDIS_DATABASE=0
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/bowchat
+      - JWT_SECRET=${JWT_SECRET}
+      - CLOUD_AWS_CREDENTIALS_ACCESSKEY=${AWS_ACCESS_KEY}
+      - CLOUD_AWS_CREDENTIALS_SECRETKEY=${AWS_SECRET_KEY}
+      - CLOUD_AWS_REGION_STATIC=ap-southeast-2
+      - CLOUD_AWS_S3_BUCKET=bowchat-image-bucket
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
+      - KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
+    ports:
+      - "8080:8080"
+    networks:
+      - bowchat-net
+  prometheus:
+    image: prom/prometheus:v2.55.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    networks:
+      - bowchat-net
+    depends_on:
+      - app
+      - postgres
+      - redis
+      - kafka
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - bowchat-net
+    depends_on:
+      - prometheus
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: postgres-exporter
+    environment:
+      DATA_SOURCE_URI: "postgres:5432/bowchat?sslmode=disable"
+      DATA_SOURCE_USER: "${POSTGRES_USER}"
+      DATA_SOURCE_PASS: "${POSTGRES_PASSWORD}"
+      PG_EXPORTER_EXTEND_QUERY_PATH: /etc/postgres_exporter/queries.yaml
+    networks:
+      - bowchat-net
+    depends_on:
+      - postgres
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.63.0
+    container_name: redis-exporter
+    command:
+      - '--redis.addr=redis:6379'
+      - '--redis.password=${REDIS_PASSWORD}'
+    networks:
+      - bowchat-net
+    depends_on:
+      - redis
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.7.0
+    container_name: kafka-exporter
+    command:
+      - '--kafka.server=kafka:9092'
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - bowchat-net
+
+  # 필요 시 Mongo 메트릭도 수집
+  # mongodb-exporter:
+  #   image: percona/mongodb_exporter:0.40.0
+  #   container_name: mongodb-exporter
+  #   command:
+  #     - '--mongodb.uri=mongodb://mongodb:27017'
+  #   networks:
+  #     - bowchat-net
+  #   depends_on:
+  #     - mongodb
+
+networks:
+  bowchat-net:
+    driver: bridge
+
+volumes:
+  pgdata:
+  mongo-data:

@@ -37,7 +37,6 @@ public class AuthService {
                         loginRequest.password()
                 )
         );
-
         PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
         User user = principalDetails.getUser();
 
