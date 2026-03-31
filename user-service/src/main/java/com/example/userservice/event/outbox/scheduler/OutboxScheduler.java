@@ -1,11 +1,11 @@
 package com.example.userservice.event.outbox.scheduler;
 
+import com.example.bowchat.kafkastarter.producer.EventProducer;
 import com.example.userservice.event.outbox.OutboxEvent;
 import com.example.userservice.event.outbox.repository.OutboxRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +17,7 @@ import java.util.List;
 @Slf4j
 public class OutboxScheduler {
     private final OutboxRepository outboxRepository;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final EventProducer eventProducer;
 
     // 1초마다 실행, ShedLock으로 멀티 인스턴스 중복 실행 방지
     @Scheduled(fixedDelay = 1000)
@@ -37,13 +37,15 @@ public class OutboxScheduler {
 
         for (OutboxEvent event : pendingEvents) {
             try {
-                kafkaTemplate.send(event.getTopic(), event.getPartitionKey(), event.getPayload());
-                event.markPublished();
-                log.info("outbox 발행 완료: topic={}, partitionKey={}", event.getTopic(), event.getPartitionKey());
+                eventProducer.sendSync(  // send → sendSync
+                        event.getTopic(),
+                        event.getPartitionKey(),
+                        event.getPayload()
+                );
+                event.markPublished(); // 발행 성공 확인 후 완료 처리
             } catch (Exception e) {
-                // 발행 실패 시 해당 이벤트만 건너뛰고 계속 진행
-                // 다음 스케줄러 실행 때 재시도됨
                 log.error("outbox 발행 실패: id={}, error={}", event.getId(), e.getMessage());
+                // 예외 던지지 않고 다음 이벤트로 넘어감 (재시도는 다음 스케줄러 실행 때)
             }
         }
     }

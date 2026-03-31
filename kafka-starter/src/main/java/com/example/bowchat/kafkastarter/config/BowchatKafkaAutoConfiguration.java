@@ -1,5 +1,6 @@
 package com.example.bowchat.kafkastarter.config;
 
+import com.example.bowchat.kafkastarter.producer.EventProducer;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -43,5 +44,12 @@ public class BowchatKafkaAutoConfiguration {
         factory.setConsumerFactory(consumerFactory);
         factory.setCommonErrorHandler(defaultErrorHandler);
         return factory;
+    }
+
+    @Bean
+    @ConditionalOnBean(KafkaTemplate.class)
+    @ConditionalOnMissingBean
+    public EventProducer eventProducer(KafkaTemplate<String, Object> kafkaTemplate) {
+        return new EventProducer(kafkaTemplate);
     }
 }
