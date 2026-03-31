@@ -14,9 +14,9 @@ spring:
   config:
     activate:
       on-profile: dev
-
+  # user-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/bowchat
+    url: jdbc:postgresql://localhost:5432/bowchat?currentSchema=user_service
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 

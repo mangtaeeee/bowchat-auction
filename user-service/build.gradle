@@ -44,6 +44,10 @@ dependencies {
     // 비밀번호 암호화 (BCrypt)
     implementation 'org.springframework.security:spring-security-crypto'
 
+    // ShedLock
+    implementation 'net.javacrumbs.shedlock:shedlock-spring:5.10.0'
+    implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.10.0'
+
     //QueryDsl
     implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
     annotationProcessor "com.querydsl:querydsl-apt:${dependencyManagement.importedProperties['querydsl.version']}:jakarta"
