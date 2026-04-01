@@ -75,4 +75,8 @@ public class ProductService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."));
     }
 
+    public Long getSellerIdByProductId(Long productId) {
+        return getProduct(productId).getSeller();
+    }
+
 }
