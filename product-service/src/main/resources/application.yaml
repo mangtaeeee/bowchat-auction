@@ -31,7 +31,7 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
       password: ${REDIS_PASSWORD}
-      database: 1  # user-service는 0, product-service는 1로 분리
+      database: 0
 
   kafka:
     bootstrap-servers: localhost:9092

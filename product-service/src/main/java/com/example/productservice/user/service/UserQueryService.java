@@ -23,7 +23,7 @@ public class UserQueryService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final UserSnapshotSaver userSnapshotSaver;
 
-    private static final String CACHE_PREFIX = "user:";
+    private static final String CACHE_PREFIX = "product:user:";
     private static final Duration TTL = Duration.ofMinutes(10);
 
     public UserSnapshot getUser(Long userId) {

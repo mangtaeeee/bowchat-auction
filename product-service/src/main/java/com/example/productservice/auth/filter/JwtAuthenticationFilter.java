@@ -27,7 +27,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 블랙리스트 체크
             if (Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:" + token))) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
+                response.setContentType("application/json; charset=UTF-8");
                 response.getWriter().write("{\"message\":\"로그아웃된 토큰입니다.\"}");
                 return;
             }
