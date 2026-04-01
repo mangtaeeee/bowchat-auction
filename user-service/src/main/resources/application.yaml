@@ -72,5 +72,9 @@ jwt:
   access-token-expiration: 3600000
   refresh-token-expiration: 1209600000
 
+# 내부 서비스 간 통신용 시크릿 (외부 노출 금지)
+internal:
+  secret: ${INTERNAL_SECRET}
+
 server:
   port: 8081

@@ -41,7 +41,8 @@ public class SecurityConfig {
                                 "/auth/**",
                                 "/user/signup",
                                 "/oauth2/**",
-                                "/actuator/**"
+                                "/actuator/**",
+                                "/internal/**"  // JWT 검증 제외 - InternalAuthInterceptor에서 X-Service-Token으로 검증
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

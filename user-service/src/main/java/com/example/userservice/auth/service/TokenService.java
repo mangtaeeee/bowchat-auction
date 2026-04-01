@@ -2,7 +2,7 @@ package com.example.userservice.auth.service;
 
 import com.example.userservice.auth.dto.AuthResponse;
 import com.example.userservice.auth.jwt.JwtProvider;
-import com.example.userservice.dto.UserInfo;
+import com.example.userservice.dto.response.UserInfo;
 import com.example.userservice.entity.User;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;

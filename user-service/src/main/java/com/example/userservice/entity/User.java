@@ -1,7 +1,7 @@
 package com.example.userservice.entity;
 
 
-import com.example.userservice.dto.SingUpRequest;
+import com.example.userservice.dto.request.SingUpRequest;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,6 +1,7 @@
 package com.example.userservice.service;
 
-import com.example.userservice.dto.SingUpRequest;
+import com.example.userservice.dto.request.SingUpRequest;
+import com.example.userservice.dto.request.UserSnapshot;
 import com.example.userservice.entity.User;
 import com.example.userservice.event.OutboxEventPublisher;
 import com.example.userservice.event.UserCreatedEvent;
@@ -33,5 +34,11 @@ public class UserService {
         // 트랜잭션 커밋되면 user + outbox 둘 다 저장
         // 트랜잭션 롤백되면 둘 다 저장 안 됨
         outboxEventPublisher.saveUserCreatedEvent(UserCreatedEvent.of(user));
+    }
+
+    public UserSnapshot getUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+        return UserSnapshot.of(user);
     }
 }

@@ -2,7 +2,7 @@ package com.example.userservice.auth.service;
 
 import com.example.userservice.auth.dto.AuthResponse;
 import com.example.userservice.auth.jwt.JwtProvider;
-import com.example.userservice.dto.LoginRequest;
+import com.example.userservice.dto.request.LoginRequest;
 import com.example.userservice.entity.PrincipalDetails;
 import com.example.userservice.entity.User;
 import com.example.userservice.repository.UserRepository;

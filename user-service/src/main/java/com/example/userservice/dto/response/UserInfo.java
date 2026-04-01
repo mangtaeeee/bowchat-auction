@@ -1,4 +1,4 @@
-package com.example.userservice.dto;
+package com.example.userservice.dto.response;
 
 import com.example.userservice.entity.ProviderType;
 import com.example.userservice.entity.User;

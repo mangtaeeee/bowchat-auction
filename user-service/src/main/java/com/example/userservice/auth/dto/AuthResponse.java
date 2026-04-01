@@ -1,6 +1,6 @@
 package com.example.userservice.auth.dto;
 
-import com.example.userservice.dto.UserInfo;
+import com.example.userservice.dto.response.UserInfo;
 import lombok.Builder;
 
 @Builder

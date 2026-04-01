@@ -10,7 +10,9 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # 추가
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - bowchat-internal
 
   redis:
     image: redis:7
@@ -18,6 +20,8 @@ services:
     command: ["redis-server", "--requirepass", "redis123"]
     ports:
       - "6379:6379"
+    networks:
+      - bowchat-internal
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -25,23 +29,119 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "2181:2181"
+    networks:
+      - bowchat-internal
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: bowchat-kafka
     depends_on:
       - zookeeper
-    ports:
-      - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: bowchat-zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - bowchat-internal
+
+  user-service:
+    build: ./user-service
+    container_name: bowchat-user-service
+    environment:
+      DB_USERNAME: bowchat
+      DB_PASSWORD: bowchat123
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis123
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+    ports:
+      - "8081:8081"  # 외부 노출 (로그인 필요)
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+    networks:
+      - bowchat-internal
+      - bowchat-external  # 외부 접근 필요 (OAuth2, 로그인)
+
+  product-service:
+    build: ./product-service
+    container_name: bowchat-product-service
+    environment:
+      DB_USERNAME: bowchat
+      DB_PASSWORD: bowchat123
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis123
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      USER_SERVICE_URL: http://user-service:8081
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+      - user-service
+    networks:
+      - bowchat-internal
+      - bowchat-external
+
+  auction-service:
+    build: ./auction-service
+    container_name: bowchat-auction-service
+    environment:
+      DB_USERNAME: bowchat
+      DB_PASSWORD: bowchat123
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      USER_SERVICE_URL: http://user-service:8081
+    ports:
+      - "8083:8083"
+    depends_on:
+      - postgres
+      - kafka
+      - user-service
+    networks:
+      - bowchat-internal
+      - bowchat-external
+
+  chat-service:
+    build: ./chat-service
+    container_name: bowchat-chat-service
+    environment:
+      DB_USERNAME: bowchat
+      DB_PASSWORD: bowchat123
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis123
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      USER_SERVICE_URL: http://user-service:8081
+    ports:
+      - "8084:8084"
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+      - user-service
+    networks:
+      - bowchat-internal
+      - bowchat-external
+
+networks:
+  bowchat-internal:
+    driver: bridge  # 서비스 간 내부 통신
+  bowchat-external:
+    driver: bridge  # 외부 클라이언트 접근
 
 volumes:
   postgres_data:

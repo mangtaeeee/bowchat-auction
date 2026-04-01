@@ -47,7 +47,6 @@ public class BowchatKafkaAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnBean(KafkaTemplate.class)
     @ConditionalOnMissingBean
     public EventProducer eventProducer(KafkaTemplate<String, Object> kafkaTemplate) {
         return new EventProducer(kafkaTemplate);

@@ -1,10 +1,4 @@
 rootProject.name = 'bowchat'
 
 include 'auction-service'
-include 'common-event'
-include 'common-even'
-include 'common-event'
-include 'common-event'
-include 'messaging-core'
 include 'kafka-starter'
-include 'bowchat-kafka'
