@@ -30,7 +30,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RefreshTokenService refreshTokenService;
     private final TokenService tokenService;
-    private final RedisTemplate<Object, Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     public AuthResponse login(LoginRequest loginRequest) {
         log.info("CustomAuthenticationProvider로 인증 시도");

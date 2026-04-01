@@ -1,7 +1,7 @@
 package com.example.userservice.auth.repository;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.time.Duration;
@@ -11,7 +11,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class RefreshTokenRepository {
 
-    private final RedisTemplate<String, String> redisTemplate;
+    private final StringRedisTemplate redisTemplate;
 
     private static final String PREFIX = "refresh_token:";
 
