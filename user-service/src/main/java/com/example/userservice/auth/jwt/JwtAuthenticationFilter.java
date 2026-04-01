@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -14,6 +15,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
+    private final RedisTemplate<String, Object> redisTemplate;
 
 
     @Override
@@ -29,9 +31,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = resolveToken(request);
         if (token != null && jwtProvider.validateToken(token)) {
+            // 블랙리스트 체크
+            if (isBlacklisted(token)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"message\":\"로그아웃된 토큰입니다.\"}");
+                return;
+            }
             SecurityContextHolder.getContext().setAuthentication(jwtProvider.getAuthentication(token));
         }
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isBlacklisted(String token) {
+        return redisTemplate.hasKey("blacklist:" + token);
     }
 
     private String resolveToken(HttpServletRequest request) {

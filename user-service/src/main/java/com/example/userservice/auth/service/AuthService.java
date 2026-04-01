@@ -9,12 +9,15 @@ import com.example.userservice.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +30,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RefreshTokenService refreshTokenService;
     private final TokenService tokenService;
+    private final RedisTemplate<Object, Object> redisTemplate;
 
     public AuthResponse login(LoginRequest loginRequest) {
         log.info("CustomAuthenticationProvider로 인증 시도");
@@ -63,4 +67,18 @@ public class AuthService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
     }
 
+    public void logout(String token, String email) {
+        // 1. Redis에서 Refresh Token 삭제
+        refreshTokenService.delete(email);
+
+        // 2. Access Token 블랙리스트 등록 (남은 만료시간만큼 TTL)
+        long expiration = jwtProvider.getExpiration(token);
+        if (expiration > 0) {
+            redisTemplate.opsForValue().set(
+                    "blacklist:" + token,
+                    "logout",
+                    Duration.ofMillis(expiration)
+            );
+        }
+    }
 }

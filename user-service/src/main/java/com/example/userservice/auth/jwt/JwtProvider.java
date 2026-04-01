@@ -87,4 +87,11 @@ public class JwtProvider {
         Claims claims = parseClaims(token);
         return claims.getSubject();
     }
+
+    // 토큰에서 남은 만료 시간 계산
+    public long getExpiration(String token) {
+        Claims claims = parseClaims(token);
+        return claims.getExpiration().getTime() - System.currentTimeMillis();
+    }
+
 }
