@@ -1,6 +1,9 @@
 package com.example.bowchat.kafkastarter.config;
 
+import com.example.bowchat.kafkastarter.event.EventMessage;
+import com.example.bowchat.kafkastarter.producer.ChatProducer;
 import com.example.bowchat.kafkastarter.producer.EventProducer;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -9,6 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 
 @AutoConfiguration
@@ -46,9 +50,31 @@ public class BowchatKafkaAutoConfiguration {
         return factory;
     }
 
+    @Bean("chatKafkaTemplate")
+    @ConditionalOnMissingBean(name = "chatKafkaTemplate")
+    public KafkaTemplate<String, EventMessage> chatKafkaTemplate(
+            ProducerFactory<String, EventMessage> producerFactory) {
+        return new KafkaTemplate<>(producerFactory);
+    }
+
+    @Bean("eventKafkaTemplate")
+    @ConditionalOnMissingBean(name = "eventKafkaTemplate")
+    public KafkaTemplate<String, Object> eventKafkaTemplate(
+            ProducerFactory<String, Object> producerFactory) {
+        return new KafkaTemplate<>(producerFactory);
+    }
+
     @Bean
     @ConditionalOnMissingBean
-    public EventProducer eventProducer(KafkaTemplate<String, Object> kafkaTemplate) {
+    public ChatProducer chatProducer(
+            @Qualifier("chatKafkaTemplate") KafkaTemplate<String, EventMessage> kafkaTemplate) {
+        return new ChatProducer(kafkaTemplate);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public EventProducer eventProducer(
+            @Qualifier("eventKafkaTemplate") KafkaTemplate<String, Object> kafkaTemplate) {
         return new EventProducer(kafkaTemplate);
     }
 }
