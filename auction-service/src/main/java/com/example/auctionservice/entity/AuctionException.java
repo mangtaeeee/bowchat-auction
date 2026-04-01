@@ -1,21 +1,15 @@
 package com.example.auctionservice.entity;
 
-//public class AuctionException extends BowChatException {
-//
-//    private final AuctionErrorCode errorCode;
-//
-//    public AuctionException(AuctionErrorCode errorCode) {
-//        super(errorCode.getMessage());
-//        this.errorCode = errorCode;
-//    }
-//
-//    @Override
-//    public HttpStatus getStatus() {
-//        return errorCode.getStatus();
-//    }
-//
-//    @Override
-//    public String getCode() {
-//        return errorCode.getCode();
-//    }
-//}
+import lombok.Getter;
+import org.springframework.web.server.ResponseStatusException;
+
+@Getter
+public class AuctionException extends ResponseStatusException {
+
+    private final AuctionErrorCode errorCode;
+
+    public AuctionException(AuctionErrorCode errorCode) {
+        super(errorCode.getStatus(), errorCode.getMessage());
+        this.errorCode = errorCode;
+    }
+}

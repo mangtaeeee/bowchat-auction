@@ -1,4 +1,4 @@
-package com.example.auctionservice.dto;
+package com.example.auctionservice.dto.response;
 
 import com.example.auctionservice.entity.Auction;
 import lombok.Builder;
@@ -9,19 +9,24 @@ import java.time.LocalDateTime;
 public record AuctionResponse(
         Long id,
         Long productId,
-        String productName,
         Long currentPrice,
+        Long startingPrice,
+        LocalDateTime startTime,
         LocalDateTime endTime,
-        Long sellerId
+        Long winnerId,
+        boolean closed
 ) {
     public static AuctionResponse of(Auction auction) {
         return AuctionResponse.builder()
                 .id(auction.getId())
-//                .productId(auction.getProduct().getId())
-//                .productName(auction.getProduct().getName())
+                .productId(auction.getProduct())
                 .currentPrice(auction.getCurrentPrice())
+                .startingPrice(auction.getStartingPrice())
+                .startTime(auction.getStartTime())
                 .endTime(auction.getEndTime())
-//                .sellerId(auction.getProduct().getSeller().getId())
+                .winnerId(auction.getWinner())
+                .closed(auction.isClosed(LocalDateTime.now()))
                 .build();
     }
 }
+

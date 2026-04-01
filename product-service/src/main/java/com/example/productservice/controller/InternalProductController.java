@@ -20,6 +20,7 @@ public class InternalProductController {
 
     @GetMapping("/{productId}/seller")
     public ResponseEntity<Long> getSellerId(@PathVariable Long productId) {
+        System.out.println("productId = " + productId);
         Long sellerId = productService.getSellerIdByProductId(productId);
         return ResponseEntity.ok(sellerId);
     }

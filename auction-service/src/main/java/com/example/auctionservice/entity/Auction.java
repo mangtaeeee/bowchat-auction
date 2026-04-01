@@ -20,7 +20,11 @@ public class Auction {
     @Version
     private Long version;
 
+    // product-service의 productId만 저장
     private Long product;
+
+    // seller는 product-service에서 관리, auctionId로 조회
+    private Long sellerId;
 
     @Column(nullable = false)
     private LocalDateTime startTime;
@@ -36,28 +40,26 @@ public class Auction {
 
     private Long winner;
 
-    public void start(LocalDateTime now) {
-        this.startTime    = now;
-        this.currentPrice = this.startingPrice;
-    }
-
     public void placeBid(Long bidder, Long amount, LocalDateTime now) {
         if (now.isAfter(endTime)) {
-            throw new IllegalStateException("이미 경매가 종료되었습니다.");
+            throw new AuctionException(AuctionErrorCode.AUCTION_CLOSED);
         }
         if (amount <= currentPrice) {
-            throw new IllegalArgumentException("입찰가가 현재 최고가 이하입니다.");
+            throw new AuctionException(AuctionErrorCode.BID_TOO_LOW);
         }
         this.currentPrice = amount;
         this.winner = bidder;
     }
 
     public void validateBid(Long bidderId, Long bidAmount) {
-        if (this.getProduct().equals(bidderId)) {
-//            throw new AuctionException(AuctionErrorCode.SELLER_CANNOT_BID);
+        if (this.sellerId != null && this.sellerId.equals(bidderId)) {
+            throw new AuctionException(AuctionErrorCode.SELLER_CANNOT_BID);
         }
-        if (bidAmount <= this.getCurrentPrice()) {
-//            throw new AuctionException(AuctionErrorCode.BID_TOO_LOW);
+        if (bidAmount <= this.currentPrice) {
+            throw new AuctionException(AuctionErrorCode.BID_TOO_LOW);
+        }
+        if (isClosed(LocalDateTime.now())) {
+            throw new AuctionException(AuctionErrorCode.AUCTION_CLOSED);
         }
     }
 
@@ -65,9 +67,10 @@ public class Auction {
         return now.isAfter(endTime);
     }
 
-    public static Auction of(Long product,Long startingPrice, LocalDateTime endTime) {
+    public static Auction of(Long productId, Long sellerId, Long startingPrice, LocalDateTime endTime) {
         return Auction.builder()
-                .product(product)
+                .product(productId)
+                .sellerId(sellerId)
                 .startTime(LocalDateTime.now())
                 .endTime(endTime)
                 .startingPrice(startingPrice)

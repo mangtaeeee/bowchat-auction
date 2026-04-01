@@ -1,7 +1,7 @@
-package com.example.productservice.auth.config;
+package com.example.auctionservice.auth.config;
 
-import com.example.productservice.auth.JwtProvider;
-import com.example.productservice.auth.filter.JwtAuthenticationFilter;
+import com.example.auctionservice.auth.JwtProvider;
+import com.example.auctionservice.auth.filter.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -28,7 +28,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/**","/internal/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e

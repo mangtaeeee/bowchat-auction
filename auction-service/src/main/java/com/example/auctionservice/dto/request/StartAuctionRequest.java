@@ -1,4 +1,4 @@
-package com.example.auctionservice.dto;
+package com.example.auctionservice.dto.request;
 
 
 import com.fasterxml.jackson.annotation.JsonFormat;
