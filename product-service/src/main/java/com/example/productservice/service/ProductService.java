@@ -7,6 +7,8 @@ import com.example.productservice.entity.Product;
 import com.example.productservice.entity.ProductImage;
 import com.example.productservice.repository.ProductImageRepository;
 import com.example.productservice.repository.ProductRepository;
+import com.example.productservice.user.entity.UserSnapshot;
+import com.example.productservice.user.service.UserQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -26,15 +28,16 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final ProductImageRepository productImageRepository;
+    private final UserQueryService userQueryService;
 
     @Transactional
-    public Long addProduct(ProductCreateDTO dto) {
-        log.info("상품 추가: 이름={}, 설명={}", dto.name(), dto.description());
+    public Long addProduct(ProductCreateDTO dto, Long sellerId) {
+        log.info("상품 추가: 이름={}, sellerId={}", dto.name(), sellerId);
         Product product = Product.builder()
                 .name(dto.name())
                 .description(dto.description())
                 .startingPrice(dto.price())
-                .seller(dto.sellerId())
+                .seller(sellerId)
                 .saleType(dto.saleType())
                 .build();
         productRepository.save(product);
@@ -51,10 +54,14 @@ public class ProductService {
         return product.getId();
     }
 
-    public ProductDetail getProductDetail(Long productId, Long sellerId, String sellerName) {
+    public ProductDetail getProductDetail(Long productId, Long requestUserId) {
         Product product = getProduct(productId);
-        boolean isSeller = product.getSeller().equals(sellerId);
-        return ProductDetail.of(product, isSeller, sellerName);
+
+        // user-service 호출 없이 로컬 UserSnapshot → Redis → HTTP fallback 순으로 조회
+        UserSnapshot seller = userQueryService.getUser(product.getSeller());
+
+        boolean isSeller = product.getSeller().equals(requestUserId);
+        return ProductDetail.of(product, isSeller, seller.getNickname());
     }
 
     public List<ProductResponse> getAllProducts() {
