@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: auction-service
+
+  profiles:
+    active: dev
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bowchat?currentSchema=auction_service
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    open-in-view: false
+    show-sql: true
+    properties:
+      hibernate.default_batch_fetch_size: 50
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+      database: 0
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: auction-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration: 3600000
+
+internal:
+  secret: ${INTERNAL_SECRET}
+
+user-service:
+  url: ${USER_SERVICE_URL:http://localhost:8081}
+
+product-service:
+  url: ${PRODUCT_SERVICE_URL:http://localhost:8082}
+
+server:
+  port: 8083

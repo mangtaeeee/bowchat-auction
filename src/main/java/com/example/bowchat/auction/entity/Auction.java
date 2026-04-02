@@ -1,7 +1,7 @@
 package com.example.bowchat.auction.entity;
 
-import com.example.bowchat.product.entity.Product;
-import com.example.bowchat.user.entity.User;
+import com.example.auctionservice.entity.AuctionErrorCode;
+import com.example.auctionservice.entity.AuctionException;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,10 +22,7 @@ public class Auction {
     @Version
     private Long version;
 
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "PRODUCT_ID", nullable = false)
-    private Product product;
+    private Long product;
 
     @Column(nullable = false)
     private LocalDateTime startTime;
@@ -39,16 +36,14 @@ public class Auction {
     @Column(nullable = false)
     private Long currentPrice;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "WINNER_ID")
-    private User winner;
+    private Long winner;
 
     public void start(LocalDateTime now) {
         this.startTime    = now;
         this.currentPrice = this.startingPrice;
     }
 
-    public void placeBid(User bidder, Long amount, LocalDateTime now) {
+    public void placeBid(Long bidder, Long amount, LocalDateTime now) {
         if (now.isAfter(endTime)) {
             throw new IllegalStateException("이미 경매가 종료되었습니다.");
         }
@@ -60,7 +55,7 @@ public class Auction {
     }
 
     public void validateBid(Long bidderId, Long bidAmount) {
-        if (this.getProduct().getSeller().getId().equals(bidderId)) {
+        if (this.getProduct().equals(bidderId)) {
             throw new AuctionException(AuctionErrorCode.SELLER_CANNOT_BID);
         }
         if (bidAmount <= this.getCurrentPrice()) {
@@ -72,14 +67,13 @@ public class Auction {
         return now.isAfter(endTime);
     }
 
-
-    public static Auction of(Product product, LocalDateTime endTime) {
+    public static Auction of(Long product,Long startingPrice, LocalDateTime endTime) {
         return Auction.builder()
                 .product(product)
                 .startTime(LocalDateTime.now())
                 .endTime(endTime)
-                .startingPrice(product.getStartingPrice())
-                .currentPrice(product.getStartingPrice())
+                .startingPrice(startingPrice)
+                .currentPrice(startingPrice)
                 .build();
     }
 }

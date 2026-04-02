@@ -1,83 +1,83 @@
-name: Deploy BowChat to EC2
-
-on:
-  push:
-    branches: [ "main" ]
-
-permissions:
-  contents: read
-
-env:
-  APP_NAME: bowchat
-  EC2_HOST: ${{ secrets.EC2_HOST }}
-  EC2_USER: ubuntu
-  EC2_KEY: ${{ secrets.EC2_SSH_KEY }}
-  PROJECT_DIR: /home/ubuntu/bowchat
-  JAR_NAME: bowchat-0.0.1-SNAPSHOT.jar
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Build Spring Boot JAR (skip tests)
-        run: ./gradlew bootJar -x test
-
-      - name: Transfer project files to EC2
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ env.EC2_HOST }}
-          username: ${{ env.EC2_USER }}
-          key: ${{ env.EC2_KEY }}
-          source: "./build/libs/${{ env.JAR_NAME }}, 
-          ./docker-compose.yml, 
-          ./Dockerfile, 
-          ./src/main/resources/application-prod.yml,
-          ./prometheus.yml, ./kafka-init.sh"
-          target: "${{ env.PROJECT_DIR }}"
-
-      - name: Connect to EC2 and Deploy via Docker Compose
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ env.EC2_HOST }}
-          username: ${{ env.EC2_USER }}
-          key: ${{ env.EC2_KEY }}
-          script: |
-            set -e
-            cd ${{ env.PROJECT_DIR }}
-            echo "EC2 연결 완료"
-
-            # 환경변수 파일 (.env) 생성
-            cat > .env <<EOF
-            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
-            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
-            AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
-            AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
-            MONGODB_URI=${{ secrets.MONGODB_URI }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}
-            KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}
-            EOF
-
-            echo ".env 파일 생성 완료"
-
-            #Docker Compose 실행
-            docker compose down || true
-            docker compose up -d --build
-
-            echo "배포 완료 — Docker Compose 정상 실행됨"
-
-            # .env 보안상 삭제
-            sleep 5
-            rm -f .env
-            echo ".env 파일 삭제 완료"
+#name: Deploy BowChat to EC2
+#
+#on:
+#  push:
+#    branches: [ "main" ]
+#
+#permissions:
+#  contents: read
+#
+#env:
+#  APP_NAME: bowchat
+#  EC2_HOST: ${{ secrets.EC2_HOST }}
+#  EC2_USER: ubuntu
+#  EC2_KEY: ${{ secrets.EC2_SSH_KEY }}
+#  PROJECT_DIR: /home/ubuntu/bowchat
+#  JAR_NAME: bowchat-0.0.1-SNAPSHOT.jar
+#
+#jobs:
+#  deploy:
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Checkout Repository
+#        uses: actions/checkout@v4
+#
+#      - name: Set up JDK 17
+#        uses: actions/setup-java@v4
+#        with:
+#          java-version: '17'
+#          distribution: 'temurin'
+#
+#      - name: Build Spring Boot JAR (skip tests)
+#        run: ./gradlew bootJar -x test
+#
+#      - name: Transfer project files to EC2
+#        uses: appleboy/scp-action@master
+#        with:
+#          host: ${{ env.EC2_HOST }}
+#          username: ${{ env.EC2_USER }}
+#          key: ${{ env.EC2_KEY }}
+#          source: "./build/libs/${{ env.JAR_NAME }},
+#          ./docker-compose.yml,
+#          ./Dockerfile,
+#          ./src/main/resources/application-prod.yml,
+#          ./prometheus.yml, ./kafka-init.sh"
+#          target: "${{ env.PROJECT_DIR }}"
+#
+#      - name: Connect to EC2 and Deploy via Docker Compose
+#        uses: appleboy/ssh-action@master
+#        with:
+#          host: ${{ env.EC2_HOST }}
+#          username: ${{ env.EC2_USER }}
+#          key: ${{ env.EC2_KEY }}
+#          script: |
+#            set -e
+#            cd ${{ env.PROJECT_DIR }}
+#            echo "EC2 연결 완료"
+#
+#            # 환경변수 파일 (.env) 생성
+#            cat > .env <<EOF
+#            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+#            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+#            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+#            AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
+#            AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
+#            MONGODB_URI=${{ secrets.MONGODB_URI }}
+#            JWT_SECRET=${{ secrets.JWT_SECRET }}
+#            KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}
+#            KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}
+#            EOF
+#
+#            echo ".env 파일 생성 완료"
+#
+#            #Docker Compose 실행
+#            docker compose down || true
+#            docker compose up -d --build
+#
+#            echo "배포 완료 — Docker Compose 정상 실행됨"
+#
+#            # .env 보안상 삭제
+#            sleep 5
+#            rm -f .env
+#            echo ".env 파일 삭제 완료"

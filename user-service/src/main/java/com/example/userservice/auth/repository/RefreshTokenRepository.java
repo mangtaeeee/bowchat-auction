@@ -1,0 +1,43 @@
+package com.example.userservice.auth.repository;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Repository;
+
+import java.time.Duration;
+import java.util.Optional;
+
+@Repository
+@RequiredArgsConstructor
+public class RefreshTokenRepository {
+
+    private final StringRedisTemplate redisTemplate;
+
+    private static final String PREFIX = "refresh_token:";
+
+    // 토큰 저장
+    public void save(String email, String refreshToken, long expiration) {
+        redisTemplate.opsForValue().set(PREFIX + email, refreshToken, Duration.ofMillis(expiration));
+    }
+
+    // 토큰 조회
+    public String findByEmail(String email) {
+        return redisTemplate.opsForValue().get(PREFIX + email);
+    }
+
+    public Optional<String> findByKey(String key) {
+        return Optional.ofNullable(redisTemplate.opsForValue().get(key));
+    }
+
+
+    // 토큰 삭제
+    public void delete(String email) {
+        redisTemplate.delete(PREFIX + email);
+    }
+
+    // 존재 여부
+    public boolean exists(String email) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey(PREFIX + email));
+    }
+
+}

@@ -17,5 +17,4 @@ public enum MessageType {
     FILE("chat-message");        // 파일 전송
 
     private final String topicName; // 카프카 토픽 이름
-
 }

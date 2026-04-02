@@ -17,11 +17,11 @@ public record AuctionResponse(
     public static AuctionResponse of(Auction auction) {
         return AuctionResponse.builder()
                 .id(auction.getId())
-                .productId(auction.getProduct().getId())
-                .productName(auction.getProduct().getName())
+//                .productId(auction.getProduct().getId())
+//                .productName(auction.getProduct().getName())
                 .currentPrice(auction.getCurrentPrice())
                 .endTime(auction.getEndTime())
-                .sellerId(auction.getProduct().getSeller().getId())
+//                .sellerId(auction.getProduct().getSeller().getId())
                 .build();
     }
 }

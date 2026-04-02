@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: chat-service
+
+  profiles:
+    active: dev
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bowchat?currentSchema=chat_service
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    open-in-view: false
+    show-sql: true
+
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://bowchat:bowchat123@localhost:27017/bowchat_chat?authSource=admin}
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+      database: 0
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration: 3600000
+
+internal:
+  secret: ${INTERNAL_SECRET}
+
+user-service:
+  url: ${USER_SERVICE_URL:http://localhost:8081}
+
+auction-service:
+  url: ${AUCTION_SERVICE_URL:http://localhost:8083}
+
+product-service:
+  url: ${PRODUCT_SERVICE_URL:http://localhost:8082}
+
+server:
+  port: 8084

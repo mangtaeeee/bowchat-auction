@@ -83,7 +83,7 @@ services:
   app:
     image: bowchat-app:latest
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
     container_name: bowchat-app
     depends_on:
