@@ -22,6 +22,7 @@ k6로 1000명 동시 입찰 환경을 시뮬레이션했고, HTTP 실패율을 7
 | auction-service | 경매 시작/입찰, 낙관적 락, 브로드캐스트 | [README](./auction-service/README.md) |
 | chat-service | WebSocket 채팅, Kafka Consumer, 전략 패턴 | [README](./chat-service/README.md) |
 
+> 모놀리식 버전: [bowchat-monolithic](https://github.com/mangtaeeee/bowchat-monolithic)
 ---
 
 ## 주요 성과
