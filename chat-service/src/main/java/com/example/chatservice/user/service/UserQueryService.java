@@ -1,8 +1,8 @@
-package com.example.productservice.user.service;
+package com.example.chatservice.user.service;
 
-import com.example.productservice.user.client.UserServiceClient;
-import com.example.productservice.user.entity.UserSnapshot;
-import com.example.productservice.user.repository.UserSnapshotRepository;
+import com.example.chatservice.user.client.UserServiceClient;
+import com.example.chatservice.user.entity.UserSnapshot;
+import com.example.chatservice.user.repository.UserSnapshotRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ public class UserQueryService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final UserSnapshotSaver userSnapshotSaver;
 
-    private static final String CACHE_PREFIX = "product:user:";
+    private static final String CACHE_PREFIX = "chat:user:";
     private static final Duration TTL = Duration.ofMinutes(10);
     private final ObjectMapper objectMapper;
 

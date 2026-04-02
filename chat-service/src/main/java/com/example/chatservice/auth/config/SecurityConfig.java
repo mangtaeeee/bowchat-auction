@@ -1,7 +1,7 @@
-package com.example.auctionservice.auth.config;
+package com.example.chatservice.auth.config;
 
-import com.example.auctionservice.auth.JwtProvider;
-import com.example.auctionservice.auth.filter.JwtAuthenticationFilter;
+import com.example.chatservice.auth.JwtProvider;
+import com.example.chatservice.auth.filter.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -28,13 +28,14 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/ws/**").permitAll()     // WebSocket 핸드셰이크
                         .requestMatchers("/actuator/**","/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint((request, response, ex) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.setContentType("application/json");
+                            response.setContentType("application/json; charset=UTF-8");
                             response.getWriter().write("{\"message\":\"Unauthorized\"}");
                         })
                 )

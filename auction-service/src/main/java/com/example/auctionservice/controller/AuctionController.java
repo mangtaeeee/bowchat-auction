@@ -41,7 +41,7 @@ public class AuctionController {
             @AuthenticationPrincipal UserPrincipal user
     ) {
         log.info("입찰 요청: auctionId={}, bidderId={}, amount={}", auctionId, user.userId(), request.bidAmount());
-        auctionService.placeBid(auctionId, user.userId(), request.bidAmount());
+        auctionService.placeBidAndBroadcast(auctionId, user.userId(), request.bidAmount());
         return ResponseEntity.ok().build();
     }
 

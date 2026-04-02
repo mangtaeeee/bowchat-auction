@@ -1,5 +1,6 @@
 package com.example.productservice.controller;
 
+import com.example.productservice.dto.ProductInfo;
 import com.example.productservice.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,10 +19,16 @@ public class InternalProductController {
 
     private final ProductService productService;
 
+
+    // auction-service에서 판매자 확인용
     @GetMapping("/{productId}/seller")
     public ResponseEntity<Long> getSellerId(@PathVariable Long productId) {
-        System.out.println("productId = " + productId);
-        Long sellerId = productService.getSellerIdByProductId(productId);
-        return ResponseEntity.ok(sellerId);
+        return ResponseEntity.ok(productService.getSellerIdByProductId(productId));
+    }
+
+    // chat-service에서 상품 정보 조회용
+    @GetMapping("/{productId}")
+    public ResponseEntity<ProductInfo> getProduct(@PathVariable Long productId) {
+        return ResponseEntity.ok(productService.getProductInfo(productId));
     }
 }

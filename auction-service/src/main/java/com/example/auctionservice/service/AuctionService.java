@@ -5,8 +5,6 @@ import com.example.auctionservice.client.ProductServiceClient;
 import com.example.auctionservice.dto.request.StartAuctionRequest;
 import com.example.auctionservice.dto.response.AuctionResponse;
 import com.example.auctionservice.entity.Auction;
-import com.example.auctionservice.entity.AuctionBid;
-import com.example.auctionservice.repository.AuctionBidRepository;
 import com.example.auctionservice.repository.AuctionRepository;
 import com.example.auctionservice.user.service.UserQueryService;
 import com.example.bowchat.kafkastarter.event.EventMessage;
@@ -21,52 +19,23 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 @Slf4j
 public class AuctionService {
 
+    private final AuctionBidService auctionBidService;
     private final AuctionRepository auctionRepository;
-    private final AuctionBidRepository auctionBidRepository;
     private final ChatProducer chatProducer;
     private final UserQueryService userQueryService;
     private final ProductServiceClient productServiceClient;
 
-    @Transactional
-    public void placeBid(Long auctionId, Long bidderId, Long bidAmount) {
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "경매를 찾을 수 없습니다."));
-
-        // 입찰 검증 (판매자 입찰 방지, 최고가 이하 방지, 종료 여부)
-        auction.validateBid(bidderId, bidAmount);
-
-        Long oldPrice = auction.getCurrentPrice();
-        auction.placeBid(bidderId, bidAmount, LocalDateTime.now());
-        auctionRepository.save(auction);
-
-        saveBidHistory(auction, bidderId, bidAmount);
-
-        log.info("입찰 완료: auctionId={}, bidderId={}, {}원 → {}원",
-                auctionId, bidderId, oldPrice, bidAmount);
-
-        // 입찰자 닉네임 조회 후 브로드캐스트
-        String bidderNickname = userQueryService.getUser(bidderId).getNickname();
-        sendBroadcast(auctionId, bidderId, bidderNickname, bidAmount);
-    }
-
-    private void saveBidHistory(Auction auction, Long bidder, Long bidAmount) {
-        auctionBidRepository.save(
-                AuctionBid.builder()
-                        .auction(auction)
-                        .bidder(bidder)
-                        .amount(bidAmount)
-                        .bidTime(LocalDateTime.now())
-                        .build()
-        );
+    public void placeBidAndBroadcast(Long auctionId, Long bidderId, Long bidAmount) {
+        auctionBidService.placeBid(auctionId, bidderId, bidAmount); // 커밋됨
+        String nickname = userQueryService.getUser(bidderId).getNickname();
+        sendBroadcast(auctionId, bidderId, nickname, bidAmount);
     }
 
     @Transactional
@@ -91,13 +60,22 @@ public class AuctionService {
         auctionRepository.save(auction);
         log.info("경매 시작: productId={}, sellerId={}", productId, sellerId);
     }
+    @Transactional(readOnly = true)
+    public AuctionResponse findAuctionByProductId(Long productId) {
+        Auction auction = auctionRepository.findByProduct(productId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "해당 상품의 경매를 찾을 수 없습니다."));
+        return AuctionResponse.of(auction);
+    }
 
+    @Transactional(readOnly = true)
     public List<AuctionResponse> getAllAuctions() {
         return auctionRepository.findAll().stream()
                 .map(AuctionResponse::of)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public AuctionResponse findAuctionById(Long id) {
         Auction auction = auctionRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "경매를 찾을 수 없습니다."));

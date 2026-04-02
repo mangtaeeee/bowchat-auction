@@ -2,6 +2,7 @@ package com.example.productservice.service;
 
 import com.example.productservice.dto.ProductCreateDTO;
 import com.example.productservice.dto.ProductDetail;
+import com.example.productservice.dto.ProductInfo;
 import com.example.productservice.dto.ProductResponse;
 import com.example.productservice.entity.Product;
 import com.example.productservice.entity.ProductImage;
@@ -62,6 +63,11 @@ public class ProductService {
 
         boolean isSeller = product.getSeller().equals(requestUserId);
         return ProductDetail.of(product, isSeller, seller.getNickname());
+    }
+
+    public ProductInfo getProductInfo(Long productId) {
+        Product product = getProduct(productId); // 없으면 404 자동
+        return new ProductInfo(product.getId(), product.getName(), product.getSeller());
     }
 
     public List<ProductResponse> getAllProducts() {

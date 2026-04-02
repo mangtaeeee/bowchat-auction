@@ -3,6 +3,7 @@ package com.example.auctionservice.user.service;
 import com.example.auctionservice.user.client.UserServiceClient;
 import com.example.auctionservice.user.entity.UserSnapshot;
 import com.example.auctionservice.user.repository.UserSnapshotRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,15 +26,16 @@ public class UserQueryService {
 
     private static final String CACHE_PREFIX = "auction:user:";
     private static final Duration TTL = Duration.ofMinutes(10);
+    private final ObjectMapper objectMapper;
 
     public UserSnapshot getUser(Long userId) {
         String cacheKey = CACHE_PREFIX + userId;
 
         // 1. Redis 캐시 조회
-        UserSnapshot cached = (UserSnapshot) redisTemplate.opsForValue().get(cacheKey);
+        Object cached = redisTemplate.opsForValue().get(cacheKey);
         if (cached != null) {
             log.debug("Redis 캐시 히트: userId={}", userId);
-            return cached;
+            return objectMapper.convertValue(cached, UserSnapshot.class);
         }
 
         // 2. 로컬 DB(UserSnapshot) 조회
