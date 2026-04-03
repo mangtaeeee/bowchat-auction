@@ -38,7 +38,6 @@ public class AuctionService {
         sendBroadcast(auctionId, bidderId, nickname, bidAmount);
     }
 
-    @Transactional
     public void startAuction(Long productId, Long requestUserId, StartAuctionRequest request) {
 
         // 1. 상품 존재 여부 + 판매자 확인 (없으면 FeignException.NotFound)
@@ -56,8 +55,7 @@ public class AuctionService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "상품 판매자만 경매를 시작할 수 있습니다.");
         }
 
-        Auction auction = Auction.of(productId, sellerId, request.startingPrice(), request.endTime());
-        auctionRepository.save(auction);
+        auctionBidService.createAuction(productId, sellerId, request);
         log.info("경매 시작: productId={}, sellerId={}", productId, sellerId);
     }
     @Transactional(readOnly = true)

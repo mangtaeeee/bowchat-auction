@@ -1,4 +1,4 @@
-package com.example.productservice.exception;
+package com.example.chatservice.exception;
 
 import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
@@ -8,7 +8,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,7 +17,7 @@ public class GlobalExceptionHandler {
 
     /**
      * ResponseStatusException
-     * 404, 403, 503 등 직접 던진 예외
+     * 채팅방 없음, 경매 종료, 권한 없음 등
      */
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ErrorResponse> handleResponseStatusException(ResponseStatusException e) {
@@ -33,7 +32,6 @@ public class GlobalExceptionHandler {
 
     /**
      * @Valid 검증 실패
-     * 어떤 필드가 왜 실패했는지 컨텍스트 포함
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException e) {
@@ -49,7 +47,7 @@ public class GlobalExceptionHandler {
 
     /**
      * FeignClient 호출 실패
-     * 어떤 서비스 호출이 실패했는지 컨텍스트 포함
+     * auction-service, product-service 호출 실패
      */
     @ExceptionHandler(FeignException.class)
     public ResponseEntity<ErrorResponse> handleFeignException(FeignException e) {
@@ -67,8 +65,18 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 지원하지 않는 채팅방 타입
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException e) {
+        log.warn("IllegalArgumentException: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of("INVALID_REQUEST", e.getMessage()));
+    }
+
+    /**
      * 그 외 처리되지 않은 예외
-     * 로그에는 상세 내용, 응답에는 최소한의 정보만
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
