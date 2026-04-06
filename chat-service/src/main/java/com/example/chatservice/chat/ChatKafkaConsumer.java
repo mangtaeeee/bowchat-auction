@@ -2,7 +2,7 @@ package com.example.chatservice.chat;
 
 import com.example.bowchat.kafkastarter.event.EventMessage;
 import com.example.chatservice.chatmessage.service.ChatMessageService;
-import com.example.chatservice.websocket.ChatWebSocketHandler;
+import com.example.chatservice.websocket.RedisChatBroadcastPublisher;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 public class ChatKafkaConsumer {
 
     private final ChatMessageService chatMessageService;
-    private final ChatWebSocketHandler chatWebSocketHandler;
+    private final RedisChatBroadcastPublisher redisChatBroadcastPublisher;
     private final ObjectMapper objectMapper;
 
     // 일반 채팅 메시지 수신 → MongoDB 저장 + WebSocket 브로드캐스트
@@ -28,9 +28,9 @@ public class ChatKafkaConsumer {
             // MongoDB 저장
             chatMessageService.save(event);
 
-            // WebSocket 브로드캐스트
+            // 모든 chat-service 인스턴스에 fan-out
             String payload = objectMapper.writeValueAsString(event);
-            chatWebSocketHandler.broadcast(event.roomId(), payload);
+            redisChatBroadcastPublisher.publish(payload);
 
         } catch (Exception e) {
             log.error("chat-message 처리 실패: {}", message, e);
@@ -49,9 +49,9 @@ public class ChatKafkaConsumer {
             // MongoDB 저장
             chatMessageService.save(event);
 
-            // 경매방 WebSocket 브로드캐스트 (roomId == auctionId)
+            // 모든 chat-service 인스턴스에 fan-out
             String payload = objectMapper.writeValueAsString(event);
-            chatWebSocketHandler.broadcast(event.roomId(), payload);
+            redisChatBroadcastPublisher.publish(payload);
 
         } catch (Exception e) {
             log.error("auction-bid 처리 실패: {}", message, e);
