@@ -3,6 +3,7 @@ package com.example.chatservice.websocket;
 import com.example.bowchat.kafkastarter.event.EventMessage;
 import com.example.bowchat.kafkastarter.event.MessageType;
 import com.example.bowchat.kafkastarter.producer.ChatProducer;
+import com.example.chatservice.chatroom.service.ChatRoomAccessService;
 import com.example.chatservice.user.service.UserQueryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final ChatProducer chatProducer;
     private final UserQueryService userQueryService;
+    private final ChatRoomAccessService chatRoomAccessService;
     private final ObjectMapper objectMapper;
 
     // roomId → 해당 방의 WebSocketSession 목록
@@ -43,6 +45,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         Long roomId = extractRoomId(session);
         Long userId = (Long) session.getAttributes().get("userId");
         String payload = message.getPayload();
+
+        if (!chatRoomAccessService.isActiveParticipant(roomId, userId)) {
+            log.warn("비인가 WebSocket 메시지 차단: roomId={}, userId={}", roomId, userId);
+            session.close(CloseStatus.POLICY_VIOLATION);
+            return;
+        }
 
         log.debug("메시지 수신: roomId={}, userId={}, payload={}", roomId, userId, payload);
 
@@ -84,6 +92,16 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         sessions.forEach(session -> {
             try {
+                if (!session.isOpen()) {
+                    return;
+                }
+
+                Long userId = (Long) session.getAttributes().get("userId");
+                if (!chatRoomAccessService.isActiveParticipant(roomId, userId)) {
+                    session.close(CloseStatus.POLICY_VIOLATION);
+                    return;
+                }
+
                 if (session.isOpen()) {
                     session.sendMessage(new TextMessage(message));
                 }
@@ -94,6 +112,11 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     private Long extractRoomId(WebSocketSession session) {
+        Object roomId = session.getAttributes().get("roomId");
+        if (roomId instanceof Long value) {
+            return value;
+        }
+
         String path = session.getUri().getPath();
         String[] parts = path.split("/");
         return Long.parseLong(parts[parts.length - 1]);
