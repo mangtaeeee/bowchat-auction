@@ -1,4 +1,0 @@
-rootProject.name = 'bowchat'
-
-include 'auction-service'
-include 'kafka-starter'

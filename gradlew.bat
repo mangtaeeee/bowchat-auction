@@ -38,6 +38,10 @@ for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 
+@rem Avoid Windows Gradle test worker failures when the user-home path contains non-ASCII characters.
+@rem Force an ASCII-only Gradle user home even if the IDE or shell already set GRADLE_USER_HOME.
+set GRADLE_USER_HOME=C:\gradle-user-home
+
 @rem Find java.exe
 if defined JAVA_HOME goto findJavaFromJavaHome
 
