@@ -29,13 +29,13 @@ public class GroupChatRoomManager implements ChatRoomManager<GroupChatRoomEnterR
 
     @Override
     @Transactional
-    public EnterChatResponse enterChatRoom(GroupChatRoomEnterRequest request) {
+    public EnterChatResponse enterChatRoom(GroupChatRoomEnterRequest request, Long userId) {
         ChatRoom room = ChatRoom.builder()
                 .name(request.getRoomName())
                 .type(ChatRoomType.GROUP)
-                .owner(request.getUserId())
+                .owner(userId)
                 .build();
-        room.registerOwner(request.getUserId());
+        room.registerOwner(userId);
         ChatRoom saved = chatRoomRepository.save(room);
 
         return new EnterChatResponse(saved.getId(), ChatRoomType.GROUP, saved.getName());

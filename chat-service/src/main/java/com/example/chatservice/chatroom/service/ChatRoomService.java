@@ -30,9 +30,9 @@ public class ChatRoomService {
         log.info("등록된 ChatRoomManager: {}", this.managers.keySet());
     }
 
-    public EnterChatResponse enterChatRoom(ChatRoomEnterRequest request) {
+    public EnterChatResponse enterChatRoom(ChatRoomEnterRequest request, Long userId) {
         ChatRoomManager<? extends ChatRoomEnterRequest> manager = resolveManager(request.getRoomType());
-        return manager.enter(request);
+        return manager.enter(request, userId);
     }
 
     public void leaveChatRoom(Long roomId, Long userId) {

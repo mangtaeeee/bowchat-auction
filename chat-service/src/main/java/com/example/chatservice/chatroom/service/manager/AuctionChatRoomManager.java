@@ -36,9 +36,8 @@ public class AuctionChatRoomManager implements ChatRoomManager<AuctionChatRoomEn
 
     @Override
     @Transactional
-    public EnterChatResponse enterChatRoom(AuctionChatRoomEnterRequest request) {
+    public EnterChatResponse enterChatRoom(AuctionChatRoomEnterRequest request, Long userId) {
         Long productId = request.getProductId();
-        Long userId = request.getUserId();
 
         // 경매 정보 조회
         AuctionInfo auction;

@@ -9,8 +9,6 @@ import lombok.NoArgsConstructor;
 public class AuctionChatRoomEnterRequest extends ChatRoomEnterRequest {
 
     private Long productId;
-    private Long userId;
-
     @Override
     public ChatRoomType getRoomType() {
         return ChatRoomType.AUCTION;
