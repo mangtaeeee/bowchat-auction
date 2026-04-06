@@ -1,8 +1,11 @@
 package com.example.chatservice.websocket;
 
 import com.example.chatservice.auth.JwtProvider;
+import com.example.chatservice.chatroom.service.ChatRoomAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.stereotype.Component;
@@ -17,6 +20,8 @@ import java.util.Map;
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
     private final JwtProvider jwtProvider;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final ChatRoomAccessService chatRoomAccessService;
 
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
@@ -25,11 +30,26 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
         String token = resolveToken(request);
         if (token == null || !jwtProvider.validateToken(token)) {
             log.warn("WebSocket 핸드셰이크 실패: 유효하지 않은 토큰");
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
 
         Long userId = jwtProvider.getUserId(token);
+        if (Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:" + token))) {
+            log.warn("WebSocket 핸드셰이크 실패: 블랙리스트 토큰 userId={}", userId);
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            return false;
+        }
+
+        Long roomId = extractRoomId(request);
+        if (roomId == null || !chatRoomAccessService.isActiveParticipant(roomId, userId)) {
+            log.warn("WebSocket 핸드셰이크 실패: 방 참여 권한 없음 roomId={}, userId={}", roomId, userId);
+            response.setStatusCode(HttpStatus.FORBIDDEN);
+            return false;
+        }
+
         attributes.put("userId", userId);  // WebSocketSession에 userId 저장
+        attributes.put("roomId", roomId);
         log.debug("WebSocket 핸드셰이크 성공: userId={}", userId);
         return true;
     }
@@ -37,6 +57,20 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
     @Override
     public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                WebSocketHandler wsHandler, Exception exception) {
+    }
+
+    private Long extractRoomId(ServerHttpRequest request) {
+        String path = request.getURI().getPath();
+        if (path == null) {
+            return null;
+        }
+
+        String[] parts = path.split("/");
+        try {
+            return Long.parseLong(parts[parts.length - 1]);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private String resolveToken(ServerHttpRequest request) {

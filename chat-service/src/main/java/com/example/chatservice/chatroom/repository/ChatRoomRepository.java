@@ -10,6 +10,15 @@ import java.util.Optional;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
+    @Query("""
+            SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END
+            FROM ChatRoomParticipant p
+            WHERE p.chatRoom.id = :roomId
+              AND p.userId = :userId
+              AND p.isActive = true
+            """)
+    boolean existsActiveParticipant(@Param("roomId") Long roomId, @Param("userId") Long userId);
+
     @Query("SELECT c FROM ChatRoom c LEFT JOIN FETCH c.participants WHERE c.id = :id")
     Optional<ChatRoom> findWithParticipantsById(@Param("id") Long id);
 
