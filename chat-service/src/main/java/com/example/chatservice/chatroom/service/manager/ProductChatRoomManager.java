@@ -36,9 +36,8 @@ public class ProductChatRoomManager implements ChatRoomManager<ProductChatRoomEn
 
     @Override
     @Transactional
-    public EnterChatResponse enterChatRoom(ProductChatRoomEnterRequest request) {
+    public EnterChatResponse enterChatRoom(ProductChatRoomEnterRequest request, Long buyerId) {
         Long productId = request.getProductId();
-        Long buyerId = request.getBuyerId();
 
         // 상품 정보 조회 (존재 여부 + 판매자 확인)
         ProductInfo product;
