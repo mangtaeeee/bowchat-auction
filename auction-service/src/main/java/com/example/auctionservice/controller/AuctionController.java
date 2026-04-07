@@ -1,16 +1,21 @@
 package com.example.auctionservice.controller;
 
-
 import com.example.auctionservice.auth.UserPrincipal;
 import com.example.auctionservice.dto.request.BidRequest;
 import com.example.auctionservice.dto.request.StartAuctionRequest;
 import com.example.auctionservice.dto.response.AuctionResponse;
 import com.example.auctionservice.service.AuctionService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -22,22 +27,20 @@ public class AuctionController {
 
     private final AuctionService auctionService;
 
-    // 경매 시작 - sellerId는 JWT에서 추출
     @PostMapping("/{productId}/start")
     public ResponseEntity<Void> startAuction(
             @PathVariable Long productId,
-            @RequestBody StartAuctionRequest request,
+            @Valid @RequestBody StartAuctionRequest request,
             @AuthenticationPrincipal UserPrincipal user
     ) {
         auctionService.startAuction(productId, user.userId(), request);
         return ResponseEntity.ok().build();
     }
 
-    // 입찰 - bidderId는 JWT에서 추출
     @PostMapping("/{auctionId}/bid")
     public ResponseEntity<Void> placeBid(
             @PathVariable Long auctionId,
-            @RequestBody BidRequest request,
+            @Valid @RequestBody BidRequest request,
             @AuthenticationPrincipal UserPrincipal user
     ) {
         log.info("입찰 요청: auctionId={}, bidderId={}, amount={}", auctionId, user.userId(), request.bidAmount());

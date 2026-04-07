@@ -1,6 +1,7 @@
 package com.example.auctionservice.auth;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
@@ -20,14 +21,13 @@ public class JwtProvider {
         return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
     }
 
-    // DB 조회 없이 클레임만으로 인증 객체 생성
     public Authentication getAuthentication(String token) {
         Claims claims = parseClaims(token);
 
-        Long userId     = claims.get("userId", Long.class);
-        String email    = claims.getSubject();
+        Long userId = claims.get("userId", Long.class);
+        String email = claims.getSubject();
         String nickname = claims.get("nickname", String.class);
-        String role     = claims.get("role", String.class);
+        String role = claims.get("role", String.class);
 
         UserPrincipal principal = new UserPrincipal(userId, email, nickname, role);
         return new UsernamePasswordAuthenticationToken(principal, token, principal.getAuthorities());
@@ -37,7 +37,7 @@ public class JwtProvider {
         try {
             parseClaims(token);
             return true;
-        } catch (Exception e) {
+        } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
     }
