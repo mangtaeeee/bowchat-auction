@@ -9,6 +9,7 @@ import com.example.auctionservice.repository.AuctionBidRepository;
 import com.example.auctionservice.repository.AuctionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +30,14 @@ public class AuctionBidService {
 
         auction.validateBid(bidderId, bidAmount);
         auction.placeBid(bidderId, bidAmount, LocalDateTime.now());
-        auctionRepository.save(auction);
+
+        try {
+            auctionRepository.saveAndFlush(auction);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            log.warn("낙관적 락 충돌: auctionId={}, bidderId={}, bidAmount={}", auctionId, bidderId, bidAmount);
+            throw new AuctionException(AuctionErrorCode.CONCURRENT_BID_CONFLICT);
+        }
+
         saveBidHistory(auction, bidderId, bidAmount);
     }
 

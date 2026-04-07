@@ -47,6 +47,7 @@ class AuctionServiceTest {
 
     @Test
     void startAuctionCreatesAuctionWhenRequesterIsSeller() {
+        // 판매자가 직접 시작 요청한 경우에만 경매 생성으로 이어져야 한다.
         StartAuctionRequest request = new StartAuctionRequest(10_000L, LocalDateTime.of(2026, 4, 6, 18, 0));
         when(productServiceClient.getSellerId(3L)).thenReturn(7L);
 
@@ -57,6 +58,7 @@ class AuctionServiceTest {
 
     @Test
     void startAuctionRejectsRequesterWhoIsNotSeller() {
+        // 판매자가 아닌 사용자는 시작 단계에서 바로 차단해야 한다.
         StartAuctionRequest request = new StartAuctionRequest(10_000L, LocalDateTime.of(2026, 4, 6, 18, 0));
         when(productServiceClient.getSellerId(3L)).thenReturn(99L);
 
@@ -70,6 +72,7 @@ class AuctionServiceTest {
 
     @Test
     void placeBidAndBroadcastPublishesAuctionBidEvent() {
+        // 입찰 성공 후에는 채팅 서비스로 전달할 이벤트가 올바른 payload로 발행돼야 한다.
         UserSnapshot bidder = UserSnapshot.builder()
                 .userId(5L)
                 .email("bidder@test.com")
