@@ -1,5 +1,7 @@
 package com.example.auctionservice.user.service;
 
+import com.example.auctionservice.entity.AuctionErrorCode;
+import com.example.auctionservice.entity.AuctionException;
 import com.example.auctionservice.user.client.UserServiceClient;
 import com.example.auctionservice.user.entity.UserSnapshot;
 import com.example.auctionservice.user.repository.UserSnapshotRepository;
@@ -8,9 +10,7 @@ import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 
@@ -19,58 +19,63 @@ import java.time.Duration;
 @Slf4j
 public class UserQueryService {
 
+    private static final String CACHE_PREFIX = "auction:user:";
+    private static final Duration TTL = Duration.ofMinutes(10);
+
     private final UserServiceClient userServiceClient;
     private final UserSnapshotRepository userSnapshotRepository;
     private final RedisTemplate<String, Object> redisTemplate;
     private final UserSnapshotSaver userSnapshotSaver;
-
-    private static final String CACHE_PREFIX = "auction:user:";
-    private static final Duration TTL = Duration.ofMinutes(10);
     private final ObjectMapper objectMapper;
 
     public UserSnapshot getUser(Long userId) {
         String cacheKey = CACHE_PREFIX + userId;
 
-        // 1. Redis 캐시 조회
-        Object cached = redisTemplate.opsForValue().get(cacheKey);
-        if (cached != null) {
-            log.debug("Redis 캐시 히트: userId={}", userId);
-            return objectMapper.convertValue(cached, UserSnapshot.class);
+        UserSnapshot cachedUser = getCachedUser(cacheKey, userId);
+        if (cachedUser != null) {
+            return cachedUser;
         }
 
-        // 2. 로컬 DB(UserSnapshot) 조회
-        UserSnapshot local = userSnapshotRepository.findById(userId).orElse(null);
-        if (local != null) {
-            redisTemplate.opsForValue().set(cacheKey, local, TTL);
-            return local;
+        UserSnapshot localSnapshot = userSnapshotRepository.findById(userId).orElse(null);
+        if (localSnapshot != null) {
+            cacheUser(cacheKey, localSnapshot);
+            return localSnapshot;
         }
 
-        // 3. user-service HTTP 호출 (Lazy 동기화)
-        try {
-            log.info("user-service HTTP 호출: userId={}", userId);
-            UserSnapshot snapshot = userServiceClient.getUser(userId);
-
-            // 로컬 DB + Redis에 저장
-            userSnapshotSaver.save(snapshot);
-            redisTemplate.opsForValue().set(cacheKey, snapshot, TTL);
-
-            return snapshot;
-
-        } catch (FeignException.NotFound e) {
-            // user-service가 404 → 진짜 없는 유저
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다.");
-
-        } catch (FeignException e) {
-            // user-service 장애 → 서비스 불가
-            log.error("user-service 호출 실패: userId={}, error={}", userId, e.getMessage());
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해주세요.");
-        }
+        return fetchFromUserService(cacheKey, userId);
     }
 
-    // user.updated / user.deleted 이벤트 수신 시 캐시 무효화
     public void evictCache(Long userId) {
         redisTemplate.delete(CACHE_PREFIX + userId);
         log.debug("유저 캐시 무효화: userId={}", userId);
+    }
+
+    private UserSnapshot getCachedUser(String cacheKey, Long userId) {
+        Object cached = redisTemplate.opsForValue().get(cacheKey);
+        if (cached == null) {
+            return null;
+        }
+
+        log.debug("Redis 캐시 히트: userId={}", userId);
+        return objectMapper.convertValue(cached, UserSnapshot.class);
+    }
+
+    private UserSnapshot fetchFromUserService(String cacheKey, Long userId) {
+        try {
+            log.info("user-service HTTP 호출: userId={}", userId);
+            UserSnapshot snapshot = userServiceClient.getUser(userId);
+            userSnapshotSaver.save(snapshot);
+            cacheUser(cacheKey, snapshot);
+            return snapshot;
+        } catch (FeignException.NotFound e) {
+            throw new AuctionException(AuctionErrorCode.USER_NOT_FOUND);
+        } catch (FeignException e) {
+            log.error("user-service 호출 실패: userId={}, status={}", userId, e.status(), e);
+            throw new AuctionException(AuctionErrorCode.USER_SERVICE_UNAVAILABLE);
+        }
+    }
+
+    private void cacheUser(String cacheKey, UserSnapshot snapshot) {
+        redisTemplate.opsForValue().set(cacheKey, snapshot, TTL);
     }
 }

@@ -3,14 +3,15 @@ package com.example.auctionservice.service;
 import com.example.auctionservice.dto.request.StartAuctionRequest;
 import com.example.auctionservice.entity.Auction;
 import com.example.auctionservice.entity.AuctionBid;
+import com.example.auctionservice.entity.AuctionErrorCode;
+import com.example.auctionservice.entity.AuctionException;
 import com.example.auctionservice.repository.AuctionBidRepository;
 import com.example.auctionservice.repository.AuctionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 
@@ -25,11 +26,18 @@ public class AuctionBidService {
     @Transactional
     public void placeBid(Long auctionId, Long bidderId, Long bidAmount) {
         Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "경매를 찾을 수 없습니다."));
+                .orElseThrow(() -> new AuctionException(AuctionErrorCode.AUCTION_NOT_FOUND));
 
         auction.validateBid(bidderId, bidAmount);
         auction.placeBid(bidderId, bidAmount, LocalDateTime.now());
-        auctionRepository.save(auction);
+
+        try {
+            auctionRepository.saveAndFlush(auction);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            log.warn("낙관적 락 충돌: auctionId={}, bidderId={}, bidAmount={}", auctionId, bidderId, bidAmount);
+            throw new AuctionException(AuctionErrorCode.CONCURRENT_BID_CONFLICT);
+        }
+
         saveBidHistory(auction, bidderId, bidAmount);
     }
 

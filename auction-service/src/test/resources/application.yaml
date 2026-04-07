@@ -1,0 +1,36 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:auctiontest;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      database: 0
+  kafka:
+    bootstrap-servers: localhost:9092
+
+jwt:
+  secret: test-test-test-test-test-test-test-test
+  access-token-expiration: 3600000
+
+internal:
+  secret: test-secret
+
+user-service:
+  url: http://localhost:8081
+
+product-service:
+  url: http://localhost:8082
