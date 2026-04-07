@@ -1,15 +1,14 @@
 package com.example.auctionservice.entity;
 
 import lombok.Getter;
-import org.springframework.web.server.ResponseStatusException;
 
 @Getter
-public class AuctionException extends ResponseStatusException {
+public class AuctionException extends RuntimeException {
 
     private final AuctionErrorCode errorCode;
 
     public AuctionException(AuctionErrorCode errorCode) {
-        super(errorCode.getStatus(), errorCode.getMessage());
+        super(errorCode.getMessage());
         this.errorCode = errorCode;
     }
 }

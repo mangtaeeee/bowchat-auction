@@ -13,22 +13,23 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class OutboxEventPublisher {
 
+    private static final String USER_CREATED_TOPIC = "user.created";
+
     private final OutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
 
-    // 트랜잭션 안에서 호출 - DB에 이벤트 저장만 함 (Kafka 발행 X)
     public void saveUserCreatedEvent(UserCreatedEvent event) {
         try {
             String payload = objectMapper.writeValueAsString(event);
             OutboxEvent outboxEvent = OutboxEvent.create(
-                    "user.created",
+                    USER_CREATED_TOPIC,
                     String.valueOf(event.userId()),
                     payload
             );
             outboxRepository.save(outboxEvent);
-            log.debug("outbox 저장 완료: userId={}", event.userId());
+            log.debug("Outbox event saved: topic={}, userId={}", USER_CREATED_TOPIC, event.userId());
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("이벤트 직렬화 실패: " + e.getMessage(), e);
+            throw new IllegalStateException("Failed to serialize user.created event", e);
         }
     }
 }

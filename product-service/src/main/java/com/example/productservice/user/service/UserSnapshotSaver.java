@@ -4,7 +4,6 @@ import com.example.productservice.user.entity.UserSnapshot;
 import com.example.productservice.user.repository.UserSnapshotRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,10 +22,15 @@ public class UserSnapshotSaver {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void saveIfAbsent(UserSnapshot snapshot) {
-        try {
-            userSnapshotRepository.save(snapshot);
+        int inserted = userSnapshotRepository.insertIfAbsent(
+                snapshot.getUserId(),
+                snapshot.getEmail(),
+                snapshot.getNickname()
+        );
+
+        if (inserted > 0) {
             log.debug("UserSnapshot saved: userId={}", snapshot.getUserId());
-        } catch (DataIntegrityViolationException e) {
+        } else {
             log.debug("UserSnapshot already exists: userId={}", snapshot.getUserId());
         }
     }

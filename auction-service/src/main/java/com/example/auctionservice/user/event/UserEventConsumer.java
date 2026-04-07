@@ -1,7 +1,7 @@
 package com.example.auctionservice.user.event;
 
-import com.example.auctionservice.user.entity.UserSnapshot;
-import com.example.auctionservice.user.service.UserSnapshotSaver;
+import com.example.auctionservice.user.service.UserCreatedEventProcessor;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,28 +13,29 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class UserEventConsumer {
 
-    private final UserSnapshotSaver userSnapshotSaver;
+    private static final String USER_CREATED_TOPIC = "user.created";
+
+    private final UserCreatedEventProcessor userCreatedEventProcessor;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "user.created", groupId = "auction-service-group")
+    @KafkaListener(topics = USER_CREATED_TOPIC, groupId = "auction-service-group")
     public void handleUserCreated(String message) {
+        UserCreatedEvent event = parseEvent(message);
+
+        if (!userCreatedEventProcessor.process(event)) {
+            log.info("Duplicate {} ignored: eventId={}, userId={}", USER_CREATED_TOPIC, event.eventId(), event.userId());
+            return;
+        }
+
+        log.info("UserSnapshot saved from {}: eventId={}, userId={}", USER_CREATED_TOPIC, event.eventId(), event.userId());
+    }
+
+    private UserCreatedEvent parseEvent(String message) {
         try {
-            // 1. 바깥 따옴표 벗겨서 실제 JSON 문자열 추출
             String innerJson = objectMapper.readValue(message, String.class);
-            // 2. 실제 JSON을 UserCreatedEvent로 변환
-            UserCreatedEvent event = objectMapper.readValue(innerJson, UserCreatedEvent.class);
-
-            log.info("user.created 수신: userId={}", event.userId());
-            userSnapshotSaver.saveIfAbsent(UserSnapshot.builder()
-                    .userId(event.userId())
-                    .email(event.email())
-                    .nickname(event.nickName())
-                    .build());
-
-            log.info("UserSnapshot 저장 완료: userId={}", event.userId());
-        } catch (Exception e) {
-            log.error("user.created 처리 실패: {}", message, e);
-            throw new RuntimeException(e);
+            return objectMapper.readValue(innerJson, UserCreatedEvent.class);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("Failed to parse user.created event message", e);
         }
     }
 }
