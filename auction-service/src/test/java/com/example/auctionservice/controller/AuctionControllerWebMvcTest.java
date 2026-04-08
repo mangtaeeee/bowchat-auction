@@ -3,6 +3,7 @@ package com.example.auctionservice.controller;
 import com.example.auctionservice.auth.JwtProvider;
 import com.example.auctionservice.auth.UserPrincipal;
 import com.example.auctionservice.auth.config.SecurityConfig;
+import com.example.auctionservice.auth.filter.InternalServiceAuthenticationFilter;
 import com.example.auctionservice.dto.response.AuctionResponse;
 import com.example.auctionservice.entity.AuctionErrorCode;
 import com.example.auctionservice.entity.AuctionException;
@@ -31,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = AuctionController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({SecurityConfig.class, GlobalExceptionHandler.class, InternalServiceAuthenticationFilter.class})
 class AuctionControllerWebMvcTest {
 
     @Autowired
