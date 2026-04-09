@@ -48,7 +48,16 @@ jwt:
   access-token-expiration: 3600000
 
 internal:
-  secret: ${INTERNAL_SECRET}
+  secret: ${INTERNAL_SECRET:}
+
+oauth2:
+  internal-client:
+    registration-id: ${OAUTH2_INTERNAL_REGISTRATION_ID:}
+    client-id: ${OAUTH2_CLIENT_ID:}
+    client-secret: ${OAUTH2_CLIENT_SECRET:}
+    token-uri: ${OAUTH2_TOKEN_URI:}
+    issuer-uri: ${OAUTH2_ISSUER_URI:}
+    scopes: ${OAUTH2_SCOPES:}
 
 user-service:
   url: ${USER_SERVICE_URL:http://localhost:8081}

@@ -1,15 +1,20 @@
 package com.example.userservice.config;
 
 import com.example.userservice.auth.CustomAuthenticationProvider;
+import com.example.userservice.auth.jwt.InternalServiceAuthenticationFilter;
 import com.example.userservice.auth.jwt.JwtAuthenticationFilter;
 import com.example.userservice.auth.jwt.JwtProvider;
 import com.example.userservice.auth.oauth.handler.OAuth2SuccessHandler;
 import com.example.userservice.auth.oauth.service.CustomOAuth2UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -19,20 +24,63 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private static final String INTERNAL_SCOPE = "SCOPE_auction.internal.read";
+
     private final JwtProvider jwtProvider;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper;
+    private final InternalServiceAuthenticationFilter internalServiceAuthenticationFilter;
 
     @Bean
+    @Order(1)
+    public SecurityFilterChain internalFilterChain(HttpSecurity http, ObjectProvider<JwtDecoder> jwtDecoderProvider) throws Exception {
+        http
+                .securityMatcher("/internal/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().hasAnyAuthority(
+                                InternalServiceAuthenticationFilter.INTERNAL_SERVICE_ROLE,
+                                INTERNAL_SCOPE
+                        )
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, ex) ->
+                                writeJson(response, HttpServletResponse.SC_UNAUTHORIZED,
+                                        Map.of("message", "Unauthorized internal API")))
+                        .accessDeniedHandler((request, response, ex) ->
+                                writeJson(response, HttpServletResponse.SC_FORBIDDEN,
+                                        Map.of("message", "Forbidden internal API")))
+                )
+                .addFilterBefore(internalServiceAuthenticationFilter, BearerTokenAuthenticationFilter.class);
+
+        JwtDecoder jwtDecoder = jwtDecoderProvider.getIfAvailable();
+        if (jwtDecoder != null) {
+            http.oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.decoder(jwtDecoder)));
+        }
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
             .csrf(AbstractHttpConfigurer::disable)
@@ -43,17 +91,14 @@ public class SecurityConfig {
                                 "/auth/**",
                                 "/user/signup",
                                 "/oauth2/**",
-                                "/actuator/**",
-                                "/internal/**"  // JWT 검증 제외 - InternalAuthInterceptor에서 X-Service-Token으로 검증
+                                "/actuator/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception ->
-                        exception.authenticationEntryPoint((request, response, authException) -> {
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.setContentType("application/json");
-                            response.getWriter().write("{\"message\":\"Unauthorized\"}");
-                        })
+                        exception.authenticationEntryPoint((request, response, authException) ->
+                                writeJson(response, HttpServletResponse.SC_UNAUTHORIZED,
+                                        Map.of("message", "Unauthorized")))
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo ->
@@ -65,6 +110,7 @@ public class SecurityConfig {
                         UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
+
     @Bean
     public PasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder();
@@ -75,5 +121,12 @@ public class SecurityConfig {
         return http.getSharedObject(AuthenticationManagerBuilder.class)
                 .authenticationProvider(customAuthenticationProvider)
                 .build();
+    }
+
+    private void writeJson(HttpServletResponse response, int status, Map<String, String> body) throws IOException {
+        response.setStatus(status);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        objectMapper.writeValue(response.getWriter(), body);
     }
 }
