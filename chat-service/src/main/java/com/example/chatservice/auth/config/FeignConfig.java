@@ -4,17 +4,31 @@ import feign.RequestInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+
+import java.util.Optional;
 
 @Configuration
 public class FeignConfig {
 
-    @Value("${internal.secret}")
+    @Value("${internal.secret:}")
     private String internalSecret;
 
-    // 모든 FeignClient 요청에 X-Service-Token 헤더 자동 추가
+    @Value("${oauth2.internal-client.registration-id:}")
+    private String clientRegistrationId;
+
     @Bean
-    public RequestInterceptor internalTokenInterceptor() {
-        return requestTemplate ->
+    public RequestInterceptor internalAuthenticationInterceptor(Optional<OAuth2AuthorizedClientManager> authorizedClientManager) {
+        return requestTemplate -> {
+            if (!internalSecret.isBlank()) {
                 requestTemplate.header("X-Service-Token", internalSecret);
+            }
+
+            authorizedClientManager
+                    .map(manager -> OAuth2ClientConfig.resolveAccessToken(manager, clientRegistrationId))
+                    .filter(token -> !token.isBlank())
+                    .ifPresent(token -> requestTemplate.header(HttpHeaders.AUTHORIZATION, "Bearer " + token));
+        };
     }
 }

@@ -12,7 +12,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Slf4j
 public class InternalAuthInterceptor implements HandlerInterceptor {
 
-    @Value("${internal.secret}")
+    @Value("${internal.secret:}")
     private String internalSecret;
 
     @Override

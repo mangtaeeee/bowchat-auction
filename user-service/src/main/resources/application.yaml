@@ -74,7 +74,11 @@ jwt:
 
 # 내부 서비스 간 통신용 시크릿 (외부 노출 금지)
 internal:
-  secret: ${INTERNAL_SECRET}
+  secret: ${INTERNAL_SECRET:}
+
+oauth2:
+  internal-client:
+    issuer-uri: ${OAUTH2_ISSUER_URI:}
 
 server:
   port: 8081
