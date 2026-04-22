@@ -3,6 +3,7 @@ package com.example.auctionservice.service;
 import com.example.auctionservice.entity.Auction;
 import com.example.auctionservice.entity.AuctionErrorCode;
 import com.example.auctionservice.entity.AuctionException;
+import com.example.auctionservice.outbox.AuctionOutboxService;
 import com.example.auctionservice.repository.AuctionBidRepository;
 import com.example.auctionservice.repository.AuctionRepository;
 import org.junit.jupiter.api.Test;
@@ -15,10 +16,14 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,6 +34,9 @@ class AuctionBidServiceTest {
 
     @Mock
     private AuctionBidRepository auctionBidRepository;
+
+    @Mock
+    private AuctionOutboxService auctionOutboxService;
 
     @InjectMocks
     private AuctionBidService auctionBidService;
@@ -50,11 +58,35 @@ class AuctionBidServiceTest {
         when(auctionRepository.saveAndFlush(any(Auction.class)))
                 .thenThrow(new ObjectOptimisticLockingFailureException(Auction.class, 1L));
 
-        assertThatThrownBy(() -> auctionBidService.placeBid(1L, 200L, 2_000L))
+        assertThatThrownBy(() -> auctionBidService.placeBid(1L, 200L, "bidder", 2_000L))
                 .isInstanceOf(AuctionException.class)
                 .extracting(ex -> ((AuctionException) ex).getErrorCode())
                 .isEqualTo(AuctionErrorCode.CONCURRENT_BID_CONFLICT);
 
         verify(auctionBidRepository, never()).save(any());
+        verifyNoInteractions(auctionOutboxService);
+    }
+
+    @Test
+    void placeBidStoresBidHistoryAndOutboxEventTogether() {
+        Auction auction = Auction.builder()
+                .id(1L)
+                .product(10L)
+                .sellerId(100L)
+                .startTime(LocalDateTime.now().minusMinutes(1))
+                .endTime(LocalDateTime.now().plusMinutes(10))
+                .startingPrice(1_000L)
+                .currentPrice(1_000L)
+                .build();
+
+        when(auctionRepository.findById(1L)).thenReturn(Optional.of(auction));
+
+        Auction updatedAuction = auctionBidService.placeBid(1L, 200L, "bidder", 2_000L);
+
+        assertThat(updatedAuction.getCurrentPrice()).isEqualTo(2_000L);
+        assertThat(updatedAuction.getWinner()).isEqualTo(200L);
+        verify(auctionRepository).saveAndFlush(any(Auction.class));
+        verify(auctionBidRepository).save(any());
+        verify(auctionOutboxService).appendBidPlacedEvent(eq(1L), eq(200L), eq("bidder"), eq(2_000L), anyLong());
     }
 }

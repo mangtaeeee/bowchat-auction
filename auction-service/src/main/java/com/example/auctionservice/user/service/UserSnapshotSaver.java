@@ -16,7 +16,8 @@ public class UserSnapshotSaver {
     private final UserSnapshotRepository userSnapshotRepository;
 
     @Transactional
-    public void save(UserSnapshot snapshot) {
+    public void save(UserSnapshot snapshot)
+    {
         userSnapshotRepository.save(snapshot);
     }
 
@@ -29,9 +30,9 @@ public class UserSnapshotSaver {
         );
 
         if (inserted > 0) {
-            log.debug("UserSnapshot saved: userId={}", snapshot.getUserId());
+            log.debug("저장 userId={}", snapshot.getUserId());
         } else {
-            log.debug("UserSnapshot already exists: userId={}", snapshot.getUserId());
+            log.debug("이미 존재하는 userId={}", snapshot.getUserId());
         }
     }
 }

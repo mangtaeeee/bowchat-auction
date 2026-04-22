@@ -2,16 +2,12 @@ package com.example.auctionservice.service;
 
 import com.example.auctionservice.client.ProductServiceClient;
 import com.example.auctionservice.dto.request.StartAuctionRequest;
+import com.example.auctionservice.dto.response.AuctionResponse;
+import com.example.auctionservice.entity.Auction;
 import com.example.auctionservice.entity.AuctionErrorCode;
 import com.example.auctionservice.entity.AuctionException;
-import com.example.auctionservice.user.entity.UserSnapshot;
-import com.example.auctionservice.user.service.UserQueryService;
-import com.example.bowchat.kafkastarter.event.EventMessage;
-import com.example.bowchat.kafkastarter.event.MessageType;
-import com.example.bowchat.kafkastarter.producer.ChatProducer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -32,12 +28,6 @@ class AuctionServiceTest {
 
     @Mock
     private com.example.auctionservice.repository.AuctionRepository auctionRepository;
-
-    @Mock
-    private ChatProducer chatProducer;
-
-    @Mock
-    private UserQueryService userQueryService;
 
     @Mock
     private ProductServiceClient productServiceClient;
@@ -71,27 +61,25 @@ class AuctionServiceTest {
     }
 
     @Test
-    void placeBidAndBroadcastPublishesAuctionBidEvent() {
-        // 입찰 성공 후에는 채팅 서비스로 전달할 이벤트가 올바른 payload로 발행돼야 한다.
-        UserSnapshot bidder = UserSnapshot.builder()
-                .userId(5L)
-                .email("bidder@test.com")
-                .nickname("bidder")
+    void placeBidReturnsUpdatedAuctionStateForImmediateUiRefresh() {
+        // 입찰 성공 응답에 최신 경매 상태를 담아주면 프론트가 브로드캐스트를 기다리지 않고 바로 화면을 갱신할 수 있다.
+        Auction auction = Auction.builder()
+                .id(9L)
+                .product(30L)
+                .sellerId(1L)
+                .startTime(LocalDateTime.now().minusMinutes(1))
+                .endTime(LocalDateTime.now().plusMinutes(10))
+                .startingPrice(10_000L)
+                .currentPrice(15_000L)
+                .winner(5L)
                 .build();
-        when(userQueryService.getUser(5L)).thenReturn(bidder);
+        when(auctionBidService.placeBid(9L, 5L, "bidder", 15_000L)).thenReturn(auction);
 
-        auctionService.placeBidAndBroadcast(9L, 5L, 15_000L);
+        AuctionResponse response = auctionService.placeBid(9L, 5L, "bidder", 15_000L);
 
-        verify(auctionBidService).placeBid(9L, 5L, 15_000L);
-
-        ArgumentCaptor<EventMessage> eventCaptor = ArgumentCaptor.forClass(EventMessage.class);
-        verify(chatProducer).send(eventCaptor.capture());
-        EventMessage event = eventCaptor.getValue();
-        assertThat(event.roomId()).isEqualTo(9L);
-        assertThat(event.senderId()).isEqualTo(5L);
-        assertThat(event.senderName()).isEqualTo("bidder");
-        assertThat(event.topicName()).isEqualTo(MessageType.AUCTION_BID.getTopicName());
-        assertThat(event.messageType()).isEqualTo(MessageType.AUCTION_BID.name());
-        assertThat(event.content()).isEqualTo("15000");
+        assertThat(response.id()).isEqualTo(9L);
+        assertThat(response.currentPrice()).isEqualTo(15_000L);
+        assertThat(response.winnerId()).isEqualTo(5L);
+        verify(auctionBidService).placeBid(9L, 5L, "bidder", 15_000L);
     }
 }

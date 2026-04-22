@@ -5,6 +5,7 @@ import com.example.auctionservice.entity.Auction;
 import com.example.auctionservice.entity.AuctionBid;
 import com.example.auctionservice.entity.AuctionErrorCode;
 import com.example.auctionservice.entity.AuctionException;
+import com.example.auctionservice.outbox.AuctionOutboxService;
 import com.example.auctionservice.repository.AuctionBidRepository;
 import com.example.auctionservice.repository.AuctionRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Service
@@ -22,14 +24,17 @@ public class AuctionBidService {
 
     private final AuctionRepository auctionRepository;
     private final AuctionBidRepository auctionBidRepository;
+    private final AuctionOutboxService auctionOutboxService;
 
     @Transactional
-    public void placeBid(Long auctionId, Long bidderId, Long bidAmount) {
+    public Auction placeBid(Long auctionId, Long bidderId, String bidderNickname, Long bidAmount) {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new AuctionException(AuctionErrorCode.AUCTION_NOT_FOUND));
 
         auction.validateBid(bidderId, bidAmount);
-        auction.placeBid(bidderId, bidAmount, LocalDateTime.now());
+        LocalDateTime bidTime = LocalDateTime.now();
+        long occurredAt = Instant.now().toEpochMilli();
+        auction.placeBid(bidderId, bidAmount, bidTime);
 
         try {
             auctionRepository.saveAndFlush(auction);
@@ -38,7 +43,9 @@ public class AuctionBidService {
             throw new AuctionException(AuctionErrorCode.CONCURRENT_BID_CONFLICT);
         }
 
-        saveBidHistory(auction, bidderId, bidAmount);
+        saveBidHistory(auction, bidderId, bidAmount, bidTime);
+        auctionOutboxService.appendBidPlacedEvent(auctionId, bidderId, bidderNickname, bidAmount, occurredAt);
+        return auction;
     }
 
     @Transactional
@@ -48,13 +55,13 @@ public class AuctionBidService {
         log.info("경매 시작: productId={}, sellerId={}", productId, sellerId);
     }
 
-    private void saveBidHistory(Auction auction, Long bidder, Long bidAmount) {
+    private void saveBidHistory(Auction auction, Long bidder, Long bidAmount, LocalDateTime bidTime) {
         auctionBidRepository.save(
                 AuctionBid.builder()
                         .auction(auction)
                         .bidder(bidder)
                         .amount(bidAmount)
-                        .bidTime(LocalDateTime.now())
+                        .bidTime(bidTime)
                         .build()
         );
     }
