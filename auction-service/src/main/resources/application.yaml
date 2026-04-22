@@ -66,5 +66,12 @@ user-service:
 product-service:
   url: ${PRODUCT_SERVICE_URL:http://localhost:8082}
 
+outbox:
+  relay:
+    fixed-delay-ms: 2000
+    batch-size: 50
+    retry-delay-seconds: 5
+    stale-threshold-seconds: 30
+
 server:
   port: 8083

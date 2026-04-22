@@ -17,7 +17,7 @@ class UserSnapshotSaverTest {
 
     @Test
     void saveIfAbsentUsesInsertOnConflictPath() {
-        // 중복 소비를 견디기 위해 existsById가 아니라 ON CONFLICT 경로를 타는지 확인한다.
+        // 중복 없는 사용자 스냅샷을 저장할 때 insertIfAbsent가 호출되는지 검증
         UserSnapshot snapshot = UserSnapshot.builder()
                 .userId(1L)
                 .email("user@test.com")

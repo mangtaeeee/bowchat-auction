@@ -99,6 +99,36 @@ class AuctionControllerWebMvcTest {
     }
 
     @Test
+    void placeBidReturnsUpdatedAuctionStateWhenRequestSucceeds() throws Exception {
+        when(auctionService.placeBid(1L, 1L, "seller", 15_000L))
+                .thenReturn(new AuctionResponse(
+                        1L,
+                        30L,
+                        15_000L,
+                        10_000L,
+                        LocalDateTime.of(2099, 1, 1, 9, 0),
+                        LocalDateTime.of(2099, 1, 1, 10, 0),
+                        1L,
+                        false
+                ));
+
+        String requestBody = """
+                {
+                  "bidAmount": 15000
+                }
+                """;
+
+        mockMvc.perform(post("/api/auctions/1/bid")
+                        .with(authentication(authenticatedUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.currentPrice").value(15_000L))
+                .andExpect(jsonPath("$.winnerId").value(1L));
+    }
+
+    @Test
     void getAuctionReturnsNotFoundWhenAuctionDoesNotExist() throws Exception {
         // 조회 대상이 없을 때는 404와 에러 코드를 그대로 유지해야 한다.
         when(auctionService.findAuctionById(99L))
