@@ -8,13 +8,13 @@ import com.example.chatservice.chatroom.entity.ChatRoom;
 import com.example.chatservice.chatroom.entity.ChatRoomType;
 import com.example.chatservice.chatroom.repository.ChatRoomRepository;
 import com.example.chatservice.chatroom.service.ChatRoomManager;
+import com.example.chatservice.exception.ChatErrorCode;
+import com.example.chatservice.exception.ChatException;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Component
 @RequiredArgsConstructor
@@ -39,21 +39,19 @@ public class AuctionChatRoomManager implements ChatRoomManager<AuctionChatRoomEn
     public EnterChatResponse enterChatRoom(AuctionChatRoomEnterRequest request, Long userId) {
         Long productId = request.getProductId();
 
-        // 경매 정보 조회
         AuctionInfo auction;
         try {
             auction = auctionServiceClient.getAuctionByProductId(productId);
         } catch (FeignException.NotFound e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "진행 중인 경매를 찾을 수 없습니다.");
+            throw new ChatException(ChatErrorCode.AUCTION_NOT_FOUND);
         } catch (FeignException e) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "경매 서비스에 접근할 수 없습니다.");
+            throw new ChatException(ChatErrorCode.AUCTION_SERVICE_UNAVAILABLE);
         }
 
         if (auction.closed()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "종료된 경매입니다.");
+            throw new ChatException(ChatErrorCode.AUCTION_CLOSED);
         }
 
-        // 기존 채팅방 있으면 입장, 없으면 생성
         ChatRoom chatRoom = chatRoomRepository.findByTypeAndProductWithParticipants(ChatRoomType.AUCTION, productId)
                 .orElseGet(() -> {
                     ChatRoom newRoom = ChatRoom.builder()
