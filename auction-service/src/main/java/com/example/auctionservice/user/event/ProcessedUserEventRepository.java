@@ -11,9 +11,9 @@ public interface ProcessedUserEventRepository extends JpaRepository<ProcessedUse
 
     @Modifying
     @Query(value = """
-            INSERT INTO processed_user_events (event_id, event_type, aggregate_id, processed_at)
+            INSERT INTO processed_user_events (eventId, eventType, aggregateId, processedAt)
             VALUES (:eventId, :eventType, :aggregateId, :processedAt)
-            ON CONFLICT (event_id) DO NOTHING
+            ON CONFLICT (eventId) DO NOTHING
             """, nativeQuery = true)
     int insertIfAbsent(
             @Param("eventId") String eventId,

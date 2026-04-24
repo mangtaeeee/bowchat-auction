@@ -1,13 +1,15 @@
 package com.example.chatservice.chatroom.service;
 
 import com.example.chatservice.chatroom.dto.request.ChatRoomEnterRequest;
+import com.example.chatservice.chatroom.dto.response.ChatRoomResponse;
 import com.example.chatservice.chatroom.dto.response.EnterChatResponse;
 import com.example.chatservice.chatroom.entity.ChatRoomType;
 import com.example.chatservice.chatroom.repository.ChatRoomRepository;
+import com.example.chatservice.exception.ChatErrorCode;
+import com.example.chatservice.exception.ChatException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -21,7 +23,6 @@ public class ChatRoomService {
     private final Map<ChatRoomType, ChatRoomManager<? extends ChatRoomEnterRequest>> managers;
     private final ChatRoomRepository chatRoomRepository;
 
-    // 생성자 주입으로 모든 Manager 자동 등록
     public ChatRoomService(List<ChatRoomManager<? extends ChatRoomEnterRequest>> managers,
                            ChatRoomRepository chatRoomRepository) {
         this.managers = managers.stream()
@@ -35,6 +36,13 @@ public class ChatRoomService {
         return manager.enter(request, userId);
     }
 
+    @Transactional(readOnly = true)
+    public List<ChatRoomResponse> getMyChatRooms(Long userId) {
+        return chatRoomRepository.findAllActiveRoomsByUserIdWithParticipants(userId).stream()
+                .map(ChatRoomResponse::from)
+                .toList();
+    }
+
     public void leaveChatRoom(Long roomId, Long userId) {
         chatRoomRepository.findWithParticipantsById(roomId)
                 .ifPresent(room -> room.deactivateMember(userId));
@@ -43,8 +51,7 @@ public class ChatRoomService {
     private ChatRoomManager<? extends ChatRoomEnterRequest> resolveManager(ChatRoomType type) {
         ChatRoomManager<? extends ChatRoomEnterRequest> manager = managers.get(type);
         if (manager == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "지원하지 않는 채팅방 타입입니다: " + type);
+            throw new ChatException(ChatErrorCode.UNSUPPORTED_CHAT_ROOM_TYPE);
         }
         return manager;
     }
