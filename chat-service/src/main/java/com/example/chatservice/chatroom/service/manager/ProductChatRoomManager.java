@@ -8,13 +8,13 @@ import com.example.chatservice.chatroom.entity.ChatRoom;
 import com.example.chatservice.chatroom.entity.ChatRoomType;
 import com.example.chatservice.chatroom.repository.ChatRoomRepository;
 import com.example.chatservice.chatroom.service.ChatRoomManager;
+import com.example.chatservice.exception.ChatErrorCode;
+import com.example.chatservice.exception.ChatException;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Component
 @RequiredArgsConstructor
@@ -39,22 +39,19 @@ public class ProductChatRoomManager implements ChatRoomManager<ProductChatRoomEn
     public EnterChatResponse enterChatRoom(ProductChatRoomEnterRequest request, Long buyerId) {
         Long productId = request.getProductId();
 
-        // 상품 정보 조회 (존재 여부 + 판매자 확인)
         ProductInfo product;
         try {
             product = productServiceClient.getProduct(productId);
         } catch (FeignException.NotFound e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 상품입니다.");
+            throw new ChatException(ChatErrorCode.PRODUCT_NOT_FOUND);
         } catch (FeignException e) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "상품 서비스에 접근할 수 없습니다.");
+            throw new ChatException(ChatErrorCode.PRODUCT_SERVICE_UNAVAILABLE);
         }
 
-        // 판매자가 자신의 상품에 채팅방 생성 방지
         if (product.sellerId().equals(buyerId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "본인 상품에는 채팅방을 생성할 수 없습니다.");
+            throw new ChatException(ChatErrorCode.OWN_PRODUCT_CHAT_NOT_ALLOWED);
         }
 
-        // 기존 채팅방 있으면 입장, 없으면 생성
         ChatRoom chatRoom = chatRoomRepository
                 .findByTypeAndProductAndUserIdWithParticipants(ChatRoomType.DIRECT, productId, buyerId)
                 .orElseGet(() -> {
