@@ -1,5 +1,6 @@
 package com.example.auctionservice.auth.filter;
 
+import com.example.auctionservice.auth.AuthConstants;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,15 +18,12 @@ import java.io.IOException;
 @Component
 public class InternalServiceAuthenticationFilter extends OncePerRequestFilter {
 
-    public static final String INTERNAL_TOKEN_HEADER = "X-Service-Token";
-    public static final String INTERNAL_SERVICE_ROLE = "ROLE_INTERNAL_SERVICE";
-
     @Value("${internal.secret}")
     private String internalSecret;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getRequestURI().startsWith("/internal/");
+        return !request.getRequestURI().startsWith(AuthConstants.INTERNAL_PATH_PREFIX);
     }
 
     @Override
@@ -37,13 +35,13 @@ public class InternalServiceAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String serviceToken = request.getHeader(INTERNAL_TOKEN_HEADER);
+        String serviceToken = request.getHeader(AuthConstants.INTERNAL_TOKEN_HEADER);
         if (internalSecret.equals(serviceToken)) {
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
-                            "internal-service",
+                            AuthConstants.INTERNAL_SERVICE_PRINCIPAL,
                             serviceToken,
-                            AuthorityUtils.createAuthorityList(INTERNAL_SERVICE_ROLE)
+                            AuthorityUtils.createAuthorityList(AuthConstants.INTERNAL_SERVICE_ROLE)
                     );
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
@@ -53,7 +51,7 @@ public class InternalServiceAuthenticationFilter extends OncePerRequestFilter {
 
     private boolean hasBearerAuthorization(HttpServletRequest request) {
         String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
-        return authorization != null && authorization.startsWith("Bearer ");
+        return authorization != null && authorization.startsWith(AuthConstants.BEARER_PREFIX);
     }
 
     private boolean isAlreadyAuthenticated() {

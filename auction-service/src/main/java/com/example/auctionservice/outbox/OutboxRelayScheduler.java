@@ -19,14 +19,12 @@ import java.util.List;
 @Slf4j
 public class OutboxRelayScheduler {
 
-    private static final int LAST_ERROR_MAX_LENGTH = 500;
-
     private final OutboxEventRepository outboxEventRepository;
     private final ChatProducer chatProducer;
     private final ObjectMapper objectMapper;
     private final OutboxRelayProperties properties;
 
-    @Scheduled(fixedDelayString = "${outbox.relay.fixed-delay-ms:2000}")
+    @Scheduled(fixedDelayString = "#{@outboxRelayProperties.fixedDelayMs}")
     public void relayPendingEvents() {
         LocalDateTime now = LocalDateTime.now();
         recoverStuckEvents(now);
@@ -117,9 +115,9 @@ public class OutboxRelayScheduler {
         if (message == null || message.isBlank()) {
             message = e.getClass().getSimpleName();
         }
-        if (message.length() <= LAST_ERROR_MAX_LENGTH) {
+        if (message.length() <= OutboxConstants.LAST_ERROR_MAX_LENGTH) {
             return message;
         }
-        return message.substring(0, LAST_ERROR_MAX_LENGTH);
+        return message.substring(0, OutboxConstants.LAST_ERROR_MAX_LENGTH);
     }
 }

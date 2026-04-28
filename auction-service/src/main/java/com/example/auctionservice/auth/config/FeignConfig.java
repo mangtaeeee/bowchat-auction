@@ -1,5 +1,6 @@
 package com.example.auctionservice.auth.config;
 
+import com.example.auctionservice.auth.AuthConstants;
 import feign.RequestInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -21,12 +22,12 @@ public class FeignConfig {
     @Bean
     public RequestInterceptor internalAuthenticationInterceptor(Optional<OAuth2AuthorizedClientManager> authorizedClientManager) {
         return requestTemplate -> {
-            requestTemplate.header("X-Service-Token", internalSecret);
+            requestTemplate.header(AuthConstants.INTERNAL_TOKEN_HEADER, internalSecret);
 
             authorizedClientManager
                     .map(manager -> OAuth2ClientConfig.resolveAccessToken(manager, clientRegistrationId))
                     .filter(token -> !token.isBlank())
-                    .ifPresent(token -> requestTemplate.header(HttpHeaders.AUTHORIZATION, "Bearer " + token));
+                    .ifPresent(token -> requestTemplate.header(HttpHeaders.AUTHORIZATION, AuthConstants.BEARER_PREFIX + token));
         };
     }
 }

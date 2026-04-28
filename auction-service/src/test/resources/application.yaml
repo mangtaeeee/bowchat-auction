@@ -21,6 +21,8 @@ spring:
       database: 0
   kafka:
     bootstrap-servers: localhost:9092
+    consumer:
+      group-id: auction-service-group
 
 jwt:
   secret: test-test-test-test-test-test-test-test
@@ -34,3 +36,17 @@ user-service:
 
 product-service:
   url: http://localhost:8082
+
+app:
+  cors:
+    allowed-origins:
+      - http://localhost:5173
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - "*"
+    allow-credentials: true

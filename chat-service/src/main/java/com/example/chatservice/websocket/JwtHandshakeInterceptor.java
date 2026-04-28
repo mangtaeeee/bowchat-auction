@@ -35,7 +35,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
         }
 
         Long userId = jwtProvider.getUserId(token);
-        if (Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:" + token))) {
+        if (redisTemplate.hasKey("blacklist:" + token)) {
             log.warn("WebSocket 핸드셰이크 실패: 블랙리스트 토큰 userId={}", userId);
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;

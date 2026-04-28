@@ -1,5 +1,6 @@
 package com.example.auctionservice.controller;
 
+import com.example.auctionservice.auth.AuthConstants;
 import com.example.auctionservice.auth.JwtProvider;
 import com.example.auctionservice.auth.config.SecurityConfig;
 import com.example.auctionservice.auth.filter.InternalServiceAuthenticationFilter;
@@ -54,7 +55,7 @@ class InternalAuctionControllerWebMvcTest {
         when(auctionService.findAuctionById(1L)).thenReturn(sampleResponse());
 
         mockMvc.perform(get("/internal/auctions/1")
-                        .header(InternalServiceAuthenticationFilter.INTERNAL_TOKEN_HEADER, "test-secret"))
+                        .header(AuthConstants.INTERNAL_TOKEN_HEADER, "test-secret"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L));
     }
@@ -93,4 +94,3 @@ class InternalAuctionControllerWebMvcTest {
         );
     }
 }
-
