@@ -18,7 +18,8 @@ public record ChatRoomResponse(
         @Schema(description = "채팅방 타입", example = "AUCTION")
         ChatRoomType type,
         @Schema(description = "활성 참여자 목록")
-        List<ChatParticipantResponse> participants
+        List<ChatParticipantResponse> participants,
+        Long productId
 ) {
     public static ChatRoomResponse from(ChatRoom chatRoom) {
         return ChatRoomResponse.builder()
@@ -29,6 +30,7 @@ public record ChatRoomResponse(
                         .filter(ChatRoomParticipant::isActive)
                         .map(ChatParticipantResponse::of)
                         .toList())
+                .productId(chatRoom.getProduct() != null ? chatRoom.getProduct() : null)
                 .build();
     }
 }
