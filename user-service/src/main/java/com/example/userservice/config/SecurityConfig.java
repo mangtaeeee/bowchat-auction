@@ -1,5 +1,6 @@
 package com.example.userservice.config;
 
+import com.example.userservice.auth.AuthConstants;
 import com.example.userservice.auth.CustomAuthenticationProvider;
 import com.example.userservice.auth.jwt.InternalServiceAuthenticationFilter;
 import com.example.userservice.auth.jwt.JwtAuthenticationFilter;
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -34,12 +36,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
 @Configuration
 @EnableWebSecurity
+@EnableConfigurationProperties(CorsProperties.class)
 public class SecurityConfig {
 
     private static final String INTERNAL_SCOPE = "SCOPE_auction.internal.read";
@@ -50,19 +52,20 @@ public class SecurityConfig {
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
     private final InternalServiceAuthenticationFilter internalServiceAuthenticationFilter;
+    private final CorsProperties corsProperties;
 
     @Bean
     @Order(1)
     public SecurityFilterChain internalFilterChain(HttpSecurity http, ObjectProvider<JwtDecoder> jwtDecoderProvider) throws Exception {
         http
-                .securityMatcher("/internal/**")
+                .securityMatcher(AuthConstants.INTERNAL_PATH_PATTERN)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().hasAnyAuthority(
-                                InternalServiceAuthenticationFilter.INTERNAL_SERVICE_ROLE,
+                                AuthConstants.INTERNAL_SERVICE_ROLE,
                                 INTERNAL_SCOPE
                         )
                 )
@@ -120,10 +123,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
+        config.setAllowedOrigins(corsProperties.allowedOrigins());
+        config.setAllowedMethods(corsProperties.allowedMethods());
+        config.setAllowedHeaders(corsProperties.allowedHeaders());
+        config.setAllowCredentials(corsProperties.allowCredentials());
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

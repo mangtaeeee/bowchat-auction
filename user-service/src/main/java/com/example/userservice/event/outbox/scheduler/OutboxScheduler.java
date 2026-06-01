@@ -19,33 +19,33 @@ public class OutboxScheduler {
     private final OutboxRepository outboxRepository;
     private final EventProducer eventProducer;
 
-    // 1초마다 실행, ShedLock으로 멀티 인스턴스 중복 실행 방지
-    @Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedDelayString = "${outbox.publish.fixed-delay-ms:1000}")
     @SchedulerLock(
             name = "outbox-publisher",
-            lockAtLeastFor = "500ms",
-            lockAtMostFor = "10s"
+            lockAtLeastFor = "${outbox.publish.lock-at-least-for:500ms}",
+            lockAtMostFor = "${outbox.publish.lock-at-most-for:10s}"
     )
     @Transactional
     public void publishPendingEvents() {
         List<OutboxEvent> pendingEvents =
                 outboxRepository.findTop100ByPublishedFalseOrderByCreatedAtAsc();
 
-        if (pendingEvents.isEmpty()) return;
+        if (pendingEvents.isEmpty()) {
+            return;
+        }
 
-        log.debug("발행 대기 이벤트: {}건", pendingEvents.size());
+        log.debug("Publishing {} pending outbox events", pendingEvents.size());
 
         for (OutboxEvent event : pendingEvents) {
             try {
-                eventProducer.sendSync(  // send → sendSync
+                eventProducer.sendSync(
                         event.getTopic(),
                         event.getPartitionKey(),
                         event.getPayload()
                 );
-                event.markPublished(); // 발행 성공 확인 후 완료 처리
+                event.markPublished();
             } catch (Exception e) {
-                log.error("outbox 발행 실패: id={}, error={}", event.getId(), e.getMessage());
-                // 예외 던지지 않고 다음 이벤트로 넘어감 (재시도는 다음 스케줄러 실행 때)
+                log.error("Outbox publish failed: id={}, error={}", event.getId(), e.getMessage());
             }
         }
     }

@@ -11,7 +11,7 @@ public record UserPrincipal(Long userId, String email, String nickname, String r
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role));
+        return List.of(new SimpleGrantedAuthority(AuthConstants.ROLE_PREFIX + role));
     }
 
     @Override

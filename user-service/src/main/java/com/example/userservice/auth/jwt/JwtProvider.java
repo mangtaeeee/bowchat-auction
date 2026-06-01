@@ -1,5 +1,6 @@
 package com.example.userservice.auth.jwt;
 
+import com.example.userservice.auth.AuthConstants;
 import com.example.userservice.entity.PrincipalDetails;
 import com.example.userservice.entity.User;
 import com.example.userservice.repository.UserRepository;
@@ -31,9 +32,9 @@ public class JwtProvider {
     public String generateToken(User user) {
         return Jwts.builder()
                 .setSubject(user.getEmail())
-                .claim("userId", user.getId())
-                .claim("nickname", user.getNickname())
-                .claim("role", user.getRole().name())
+                .claim(AuthConstants.JWT_CLAIM_USER_ID, user.getId())
+                .claim(AuthConstants.JWT_CLAIM_NICKNAME, user.getNickname())
+                .claim(AuthConstants.JWT_CLAIM_ROLE, user.getRole().name())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiration()))
                 .signWith(getSigningKey())
                 .compact();
@@ -56,7 +57,7 @@ public class JwtProvider {
     //토큰에서 인증정보 꺼내기
     public Authentication getAuthentication(String token) {
         Claims claims = parseClaims(token);
-        Long userId = claims.get("userId", Long.class);
+        Long userId = claims.get(AuthConstants.JWT_CLAIM_USER_ID, Long.class);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));

@@ -1,5 +1,6 @@
 package com.example.productservice.auth.config;
 
+import com.example.productservice.auth.AuthConstants;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -80,7 +81,7 @@ public class OAuth2ClientConfig {
                 .principal(new AnonymousAuthenticationToken(
                         "system",
                         "feign-client",
-                        AuthorityUtils.createAuthorityList("ROLE_SYSTEM")))
+                        AuthorityUtils.createAuthorityList(AuthConstants.ROLE_PREFIX + "SYSTEM")))
                 .build();
 
         var authorizedClient = manager.authorize(request);

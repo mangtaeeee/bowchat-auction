@@ -1,10 +1,12 @@
 package com.example.chatservice.websocket;
 
+import com.example.chatservice.auth.AuthConstants;
 import com.example.chatservice.auth.JwtProvider;
 import com.example.chatservice.chatroom.service.ChatRoomAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -35,7 +37,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
         }
 
         Long userId = jwtProvider.getUserId(token);
-        if (redisTemplate.hasKey("blacklist:" + token)) {
+        if (redisTemplate.hasKey(AuthConstants.BLACKLIST_PREFIX + token)) {
             log.warn("WebSocket 핸드셰이크 실패: 블랙리스트 토큰 userId={}", userId);
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
@@ -85,9 +87,9 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             }
         }
         // Authorization 헤더에서도 추출 시도
-        String auth = request.getHeaders().getFirst("Authorization");
-        if (auth != null && auth.startsWith("Bearer ")) {
-            return auth.substring(7);
+        String auth = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        if (auth != null && auth.startsWith(AuthConstants.BEARER_PREFIX)) {
+            return auth.substring(AuthConstants.BEARER_PREFIX_LENGTH);
         }
         return null;
     }

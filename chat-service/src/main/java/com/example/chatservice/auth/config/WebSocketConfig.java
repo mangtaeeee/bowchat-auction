@@ -16,11 +16,12 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     private final ChatWebSocketHandler chatWebSocketHandler;
     private final JwtHandshakeInterceptor jwtHandshakeInterceptor;
+    private final CorsProperties corsProperties;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(chatWebSocketHandler, "/ws/chat/{roomId}")
                 .addInterceptors(jwtHandshakeInterceptor)
-                .setAllowedOrigins("*");
+                .setAllowedOrigins(corsProperties.allowedOrigins().toArray(String[]::new));
     }
 }

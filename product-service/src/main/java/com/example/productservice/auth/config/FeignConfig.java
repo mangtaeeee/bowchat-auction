@@ -1,5 +1,6 @@
 package com.example.productservice.auth.config;
 
+import com.example.productservice.auth.AuthConstants;
 import feign.RequestInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -22,13 +23,13 @@ public class FeignConfig {
     public RequestInterceptor internalAuthenticationInterceptor(Optional<OAuth2AuthorizedClientManager> authorizedClientManager) {
         return requestTemplate -> {
             if (!internalSecret.isBlank()) {
-                requestTemplate.header("X-Service-Token", internalSecret);
+                requestTemplate.header(AuthConstants.INTERNAL_TOKEN_HEADER, internalSecret);
             }
 
             authorizedClientManager
                     .map(manager -> OAuth2ClientConfig.resolveAccessToken(manager, clientRegistrationId))
                     .filter(token -> !token.isBlank())
-                    .ifPresent(token -> requestTemplate.header(HttpHeaders.AUTHORIZATION, "Bearer " + token));
+                    .ifPresent(token -> requestTemplate.header(HttpHeaders.AUTHORIZATION, AuthConstants.BEARER_PREFIX + token));
         };
     }
 }

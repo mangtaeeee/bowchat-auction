@@ -1,5 +1,6 @@
 package com.example.userservice.config;
 
+import com.example.userservice.auth.AuthConstants;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
@@ -20,10 +21,10 @@ public class InternalAuthInterceptor implements HandlerInterceptor {
                              @NonNull HttpServletResponse response,
                              @NonNull Object handler) throws Exception {
 
-        String serviceToken = request.getHeader("X-Service-Token");
+        String serviceToken = request.getHeader(AuthConstants.INTERNAL_TOKEN_HEADER);
 
         if (serviceToken == null || !internalSecret.equals(serviceToken)) {
-            log.warn("내부 API 인증 실패: uri={}, token={}", request.getRequestURI(), serviceToken);
+            log.warn("?대? API ?몄쬆 ?ㅽ뙣: uri={}, token={}", request.getRequestURI(), serviceToken);
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json");
             response.getWriter().write("{\"message\":\"Forbidden\"}");

@@ -1,11 +1,13 @@
 package com.example.userservice.auth.jwt;
 
+import com.example.userservice.auth.AuthConstants;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -17,13 +19,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtProvider jwtProvider;
     private final RedisTemplate<String, Object> redisTemplate;
 
-
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-
-        // WebSocket 업그레이드 요청은 JWT 검증에서 제외
         if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade"))) {
             filterChain.doFilter(request, response);
             return;
@@ -31,7 +30,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = resolveToken(request);
         if (token != null && jwtProvider.validateToken(token)) {
-            // 블랙리스트 체크
             if (isBlacklisted(token)) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
@@ -44,15 +42,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isBlacklisted(String token) {
-        return redisTemplate.hasKey("blacklist:" + token);
+        return redisTemplate.hasKey(AuthConstants.BLACKLIST_PREFIX + token);
     }
 
     private String resolveToken(HttpServletRequest request) {
-
-        String bearerToken = request.getHeader("Authorization");
-
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7); // "Bearer " 이후 부분만 가져옴
+        String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (bearerToken != null && bearerToken.startsWith(AuthConstants.BEARER_PREFIX)) {
+            return bearerToken.substring(AuthConstants.BEARER_PREFIX_LENGTH);
         }
         return null;
     }

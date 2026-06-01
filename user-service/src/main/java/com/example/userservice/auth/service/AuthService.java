@@ -1,5 +1,6 @@
 package com.example.userservice.auth.service;
 
+import com.example.userservice.auth.AuthConstants;
 import com.example.userservice.auth.dto.AuthResponse;
 import com.example.userservice.auth.jwt.JwtProvider;
 import com.example.userservice.dto.request.LoginRequest;
@@ -75,8 +76,8 @@ public class AuthService {
         long expiration = jwtProvider.getExpiration(token);
         if (expiration > 0) {
             redisTemplate.opsForValue().set(
-                    "blacklist:" + token,
-                    "logout",
+                    AuthConstants.BLACKLIST_PREFIX + token,
+                    AuthConstants.LOGOUT_MARKER,
                     Duration.ofMillis(expiration)
             );
         }
