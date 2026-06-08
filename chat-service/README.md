@@ -228,3 +228,46 @@ auction-service -> Kafka auction-bid 발행
                 -> Redis Pub/Sub fan-out
                 -> 각 인스턴스 로컬 세션 브로드캐스트
 ```
+
+---
+
+## 인증 구조 최신화 (2026-06)
+
+채팅 서비스의 인증은 이제 `Keycloak JWT + Redis blacklist` 기준이다.
+예전의 자체 JWT 파싱 설명은 분리 시점 기록이고, 현재 운영 기준은 아래 구조다.
+
+### 현재 채팅 서비스 인증 책임
+
+- 일반 REST API: Keycloak access token 검증
+- WebSocket 핸드셰이크: Keycloak access token 검증 + 채팅방 참여 권한 확인
+- 내부 API(`/internal/**`): Keycloak `client_credentials` 토큰 검증
+- 로그아웃 토큰 차단: Redis blacklist 확인
+- 컨트롤러 호환성 유지: Keycloak JWT를 `UserPrincipal(userId, email, nickname, role)`로 변환
+
+### REST 요청 흐름
+
+```text
+Client -> Authorization: Bearer <Keycloak access token>
+       -> chat-service SecurityFilterChain
+       -> issuer/public key 검증
+       -> UserPrincipal 변환
+       -> Controller에서 @AuthenticationPrincipal UserPrincipal 사용
+```
+
+### WebSocket 연결 흐름
+
+```text
+Client -> /ws/chat/{roomId}?token=<Keycloak access token>
+       -> JwtHandshakeInterceptor
+       -> Keycloak JWT 검증
+       -> Redis blacklist 확인
+       -> 채팅방 활성 참여자인지 검증
+       -> 연결 허용
+```
+
+### 현재 전제
+
+- Keycloak access token에 `userId`, `email`, `nickname`, `role` claim이 있어야 한다.
+- `INTERNAL_SECRET`, `X-Service-Token` fallback은 제거됐다.
+- 내부 호출도 Keycloak `client_credentials` 기반이다.
+

@@ -4,18 +4,20 @@ import com.example.userservice.auth.dto.AccessTokenResponse;
 import com.example.userservice.auth.dto.AuthResponse;
 import com.example.userservice.auth.service.AuthService;
 import com.example.userservice.dto.request.LoginRequest;
-import com.example.userservice.entity.PrincipalDetails;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.Duration;
 
 @Slf4j
 @RestController
@@ -31,9 +33,14 @@ public class AuthController {
 
     @PostMapping("/auth/refresh")
     public ResponseEntity<AccessTokenResponse> refreshAccessToken(HttpServletRequest request, HttpServletResponse response) {
-        String newAccessToken = authService.refreshAccessToken(request);
+        AuthResponse authResponse = authService.refreshAccessToken(request);
+        String newAccessToken = authResponse.accessToken();
 
         response.setHeader(HttpHeaders.AUTHORIZATION, AuthConstants.BEARER_PREFIX + newAccessToken);
+        response.addHeader(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(
+                authResponse.refreshToken(),
+                authResponse.refreshTokenExpiresIn()
+        ).toString());
 
         return ResponseEntity.ok(new AccessTokenResponse(newAccessToken));
     }
@@ -41,11 +48,21 @@ public class AuthController {
     @PostMapping("/auth/logout")
     public ResponseEntity<Void> logout(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String bearerToken,
-            @AuthenticationPrincipal PrincipalDetails user
+            Authentication authentication
     ) {
         String token = bearerToken.substring(AuthConstants.BEARER_PREFIX_LENGTH);
-        authService.logout(token, user.getUsername());
+        authService.logout(token, authentication);
         return ResponseEntity.ok().build();
     }
 
+    private ResponseCookie createRefreshTokenCookie(String refreshToken, Long expirationMillis) {
+        long maxAge = expirationMillis == null ? 0L : expirationMillis;
+        return ResponseCookie.from(AuthConstants.REFRESH_TOKEN_COOKIE_NAME, refreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(Duration.ofMillis(maxAge))
+                .sameSite("Strict")
+                .build();
+    }
 }

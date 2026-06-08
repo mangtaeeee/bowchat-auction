@@ -2,10 +2,10 @@ package com.example.userservice.config;
 
 import com.example.userservice.auth.AuthConstants;
 import com.example.userservice.auth.CustomAuthenticationProvider;
-import com.example.userservice.auth.jwt.JwtAuthenticationFilter;
-import com.example.userservice.auth.jwt.JwtProvider;
+import com.example.userservice.auth.filter.AccessTokenBlacklistFilter;
+import com.example.userservice.auth.oauth.config.KeycloakAuthorizationRequestResolver;
 import com.example.userservice.auth.oauth.handler.OAuth2SuccessHandler;
-import com.example.userservice.auth.oauth.service.CustomOAuth2UserService;
+import com.example.userservice.auth.oauth.service.KeycloakOidcUserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +32,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -45,10 +47,9 @@ import java.util.Map;
 @EnableConfigurationProperties(CorsProperties.class)
 public class SecurityConfig {
 
-    private static final String INTERNAL_SCOPE = "SCOPE_auction.internal.read";
+    private static final String INTERNAL_SCOPE = "SCOPE_user.internal.read";
 
-    private final JwtProvider jwtProvider;
-    private final CustomOAuth2UserService customOAuth2UserService;
+    private final KeycloakOidcUserService keycloakOidcUserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
@@ -99,8 +100,13 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            ObjectProvider<JwtDecoder> jwtDecoderProvider,
+            ObjectProvider<Converter<Jwt, ? extends AbstractAuthenticationToken>> jwtAuthenticationConverterProvider,
+            ObjectProvider<OAuth2AuthorizationRequestResolver> authorizationRequestResolverProvider
+    ) throws Exception {
+        http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
@@ -110,6 +116,7 @@ public class SecurityConfig {
                                 "/auth/**",
                                 "/user/signup",
                                 "/oauth2/**",
+                                "/login/oauth2/**",
                                 "/actuator/**"
                         ).permitAll()
                         .anyRequest().authenticated()
@@ -119,15 +126,34 @@ public class SecurityConfig {
                                 writeJson(response, HttpServletResponse.SC_UNAUTHORIZED,
                                         Map.of("message", "Unauthorized")))
                 )
-                .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(userInfo ->
-                                userInfo.userService(customOAuth2UserService))
-                        .successHandler(oAuth2SuccessHandler)
-                )
+                .oauth2Login(oauth2 -> {
+                    OAuth2AuthorizationRequestResolver authorizationRequestResolver =
+                            authorizationRequestResolverProvider.getIfAvailable();
+                    if (authorizationRequestResolver != null) {
+                        oauth2.authorizationEndpoint(authorization ->
+                                authorization.authorizationRequestResolver(authorizationRequestResolver));
+                    }
+                    oauth2.userInfoEndpoint(userInfo ->
+                            userInfo.oidcUserService(keycloakOidcUserService));
+                    oauth2.successHandler(oAuth2SuccessHandler);
+                })
                 .addFilterBefore(
-                        new JwtAuthenticationFilter(jwtProvider, redisTemplate),
-                        UsernamePasswordAuthenticationFilter.class)
-                .build();
+                        new AccessTokenBlacklistFilter(redisTemplate, objectMapper),
+                        UsernamePasswordAuthenticationFilter.class);
+
+        JwtDecoder jwtDecoder = jwtDecoderProvider.getIfAvailable();
+        if (jwtDecoder != null) {
+            Converter<Jwt, ? extends AbstractAuthenticationToken> jwtAuthenticationConverter =
+                    jwtAuthenticationConverterProvider.getIfAvailable();
+            http.oauth2ResourceServer(oauth -> oauth.jwt(jwt -> {
+                jwt.decoder(jwtDecoder);
+                if (jwtAuthenticationConverter != null) {
+                    jwt.jwtAuthenticationConverter(jwtAuthenticationConverter);
+                }
+            }));
+        }
+
+        return http.build();
     }
 
     @Bean
@@ -155,6 +181,13 @@ public class SecurityConfig {
                 .build();
     }
 
+    @Bean
+    public OAuth2AuthorizationRequestResolver authorizationRequestResolver(
+            ClientRegistrationRepository clientRegistrationRepository
+    ) {
+        return new KeycloakAuthorizationRequestResolver(clientRegistrationRepository);
+    }
+
     private void writeJson(HttpServletResponse response, int status, Map<String, String> body) throws IOException {
         response.setStatus(status);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
@@ -162,3 +195,4 @@ public class SecurityConfig {
         objectMapper.writeValue(response.getWriter(), body);
     }
 }
+

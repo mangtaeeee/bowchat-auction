@@ -276,3 +276,43 @@ JWT(userId)
 -> OutboxRelayScheduler polling
 -> ChatProducer로 auction-bid 이벤트 발행
 ```
+
+---
+
+## 인증 구조 최신화 (2026-06)
+
+경매 서비스의 일반 사용자 인증은 이제 `user-service 자체 JWT 파싱`이 아니라 `Keycloak JWT 검증` 기준이다.
+이 README의 예전 JWT 파싱 설명은 분리 당시 작업 기록이고, 현재 동작 기준은 아래와 같다.
+
+### 현재 경매 서비스 인증 책임
+
+- 일반 사용자 API: `oauth2ResourceServer()`로 Keycloak access token 검증
+- 내부 API(`/internal/**`): Keycloak `client_credentials` 토큰 검증
+- 로그아웃 토큰 차단: Redis blacklist 확인
+- 컨트롤러 호환성 유지: Keycloak JWT를 `UserPrincipal(userId, email, nickname, role)`로 변환
+
+### 일반 사용자 요청 흐름
+
+```text
+Client -> Authorization: Bearer <Keycloak access token>
+       -> auction-service SecurityFilterChain
+       -> Keycloak issuer/public key 검증
+       -> UserJwtAuthenticationConfig가 UserPrincipal 생성
+       -> Controller에서 @AuthenticationPrincipal UserPrincipal 사용
+```
+
+### 내부 API 요청 흐름
+
+```text
+auction-service -> Keycloak client_credentials
+                -> Bearer Token 발급
+                -> 다른 서비스 /internal/** 호출
+                -> 상대 서비스가 issuer / scope / role 검증
+```
+
+### 현재 전제
+
+- Keycloak access token에 `userId`, `email`, `nickname`, `role` claim이 있어야 한다.
+- `INTERNAL_SECRET`, `X-Service-Token` fallback은 제거됐다.
+- 일반 사용자 인증용 `JWT_SECRET` 공유 구조도 더 이상 운영 기준이 아니다.
+

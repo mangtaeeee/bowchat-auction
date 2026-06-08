@@ -4,6 +4,7 @@ import com.example.userservice.dto.request.SingUpRequest;
 import com.example.userservice.entity.User;
 import com.example.userservice.event.OutboxEventPublisher;
 import com.example.userservice.event.UserCreatedEvent;
+import com.example.userservice.auth.service.KeycloakAuthService;
 import com.example.userservice.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +36,9 @@ class UserServiceTest {
 
     @Mock
     private OutboxEventPublisher outboxEventPublisher;
+
+    @Mock
+    private KeycloakAuthService keycloakAuthService;
 
     @InjectMocks
     private UserService userService;

@@ -5,6 +5,7 @@ import com.example.userservice.dto.request.UserSnapshot;
 import com.example.userservice.entity.User;
 import com.example.userservice.event.OutboxEventPublisher;
 import com.example.userservice.event.UserCreatedEvent;
+import com.example.userservice.auth.service.KeycloakAuthService;
 import com.example.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final OutboxEventPublisher outboxEventPublisher;
+    private final KeycloakAuthService keycloakAuthService;
 
     @Transactional
     public void signup(SingUpRequest request) {
@@ -29,6 +31,7 @@ public class UserService {
         }
         String encodedPassword = passwordEncoder.encode(request.password());
         User user = userRepository.save(User.createLocalUserFromRequest(request, encodedPassword));
+        keycloakAuthService.syncLocalUser(user, request.password());
 
         // Kafka 직접 발행 대신 outbox 테이블에 저장 (같은 트랜잭션)
         // 트랜잭션 커밋되면 user + outbox 둘 다 저장

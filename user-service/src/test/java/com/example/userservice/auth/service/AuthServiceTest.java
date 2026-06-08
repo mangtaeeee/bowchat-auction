@@ -1,6 +1,5 @@
 package com.example.userservice.auth.service;
 
-import com.example.userservice.auth.jwt.JwtProvider;
 import com.example.userservice.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,8 +8,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.time.Duration;
+import java.time.Instant;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -21,21 +22,17 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
-    // logout은 JWT 만료시간과 Redis blacklist 기록 여부가 핵심이다.
-    @Mock
-    private JwtProvider jwtProvider;
-
     @Mock
     private org.springframework.security.authentication.AuthenticationManager authenticationManager;
-
-    @Mock
-    private UserRepository userRepository;
 
     @Mock
     private RefreshTokenService refreshTokenService;
 
     @Mock
     private TokenService tokenService;
+
+    @Mock
+    private KeycloakAuthService keycloakAuthService;
 
     @Mock
     private RedisTemplate<String, Object> redisTemplate;
@@ -52,11 +49,12 @@ class AuthServiceTest {
         String accessToken = "access-token";
         String email = "user@test.com";
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(jwtProvider.getExpiration(accessToken)).thenReturn(5_000L);
+        when(refreshTokenService.findRefreshTokenByEmail(email)).thenReturn("refresh-token");
 
-        authService.logout(accessToken, email);
+        authService.logout(accessToken, authenticatedJwt(email, Instant.now().plusSeconds(5)));
 
         // then: refresh token 삭제 후 access token이 blacklist에 등록돼야 한다.
+        verify(keycloakAuthService).logout("refresh-token");
         verify(refreshTokenService).delete(email);
         verify(valueOperations).set(eq("blacklist:" + accessToken), eq("logout"), any(Duration.class));
     }
@@ -66,12 +64,27 @@ class AuthServiceTest {
         // given: 이미 만료된 토큰이면 blacklist에 넣을 필요가 없다.
         String accessToken = "expired-access-token";
         String email = "user@test.com";
-        when(jwtProvider.getExpiration(accessToken)).thenReturn(0L);
+        when(refreshTokenService.findRefreshTokenByEmail(email)).thenReturn("refresh-token");
 
-        authService.logout(accessToken, email);
+        authService.logout(accessToken, authenticatedJwt(email, Instant.now().minusSeconds(1)));
 
         // then: refresh token 정리는 하되 blacklist 저장은 건너뛴다.
+        verify(keycloakAuthService).logout("refresh-token");
         verify(refreshTokenService).delete(email);
         verify(valueOperations, never()).set(eq("blacklist:" + accessToken), eq("logout"), any(Duration.class));
+    }
+
+    private org.springframework.security.core.Authentication authenticatedJwt(String email, Instant expiresAt) {
+        Jwt jwt = new Jwt(
+                "access-token",
+                Instant.now().minusSeconds(10),
+                expiresAt,
+                java.util.Map.of("alg", "RS256"),
+                java.util.Map.of(
+                        "sub", email,
+                        "preferred_username", email
+                )
+        );
+        return new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken(jwt);
     }
 }
