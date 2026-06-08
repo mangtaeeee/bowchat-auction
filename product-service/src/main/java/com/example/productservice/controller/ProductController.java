@@ -32,7 +32,8 @@ public class ProductController {
             @PathVariable Long productId,
             @AuthenticationPrincipal UserPrincipal user
     ) {
-        ProductDetail detail = productService.getProductDetail(productId, user.userId());
+        Long requestUserId = user != null ? user.userId() : null;
+        ProductDetail detail = productService.getProductDetail(productId, requestUserId);
         return ResponseEntity.ok(detail);
     }
 

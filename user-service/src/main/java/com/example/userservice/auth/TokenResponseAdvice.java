@@ -1,6 +1,8 @@
 package com.example.userservice.auth;
 
 import com.example.userservice.auth.dto.AuthResponse;
+import com.example.userservice.auth.jwt.JwtProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -13,7 +15,10 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 import java.time.Duration;
 
 @ControllerAdvice
+@RequiredArgsConstructor
 public class TokenResponseAdvice implements ResponseBodyAdvice<AuthResponse> {
+
+    private final JwtProperties jwtProperties;
 
     @Override
     public boolean supports(MethodParameter returnType, Class converterType) {
@@ -30,7 +35,7 @@ public class TokenResponseAdvice implements ResponseBodyAdvice<AuthResponse> {
 
         String userAgent = request.getHeaders().getFirst("User-Agent");
 
-        response.getHeaders().set(HttpHeaders.AUTHORIZATION, "Bearer " + body.accessToken());
+        response.getHeaders().set(HttpHeaders.AUTHORIZATION, AuthConstants.BEARER_PREFIX + body.accessToken());
 
         if (!isMobile(userAgent)) {
             // web에서 요청한 경우, Refresh Token을 쿠키에 설정
@@ -52,12 +57,12 @@ public class TokenResponseAdvice implements ResponseBodyAdvice<AuthResponse> {
         );
     }
 
-    private static ResponseCookie createRefreshTokenCookie(String refreshToken) {
-        return ResponseCookie.from("refreshToken", refreshToken)
+    private ResponseCookie createRefreshTokenCookie(String refreshToken) {
+        return ResponseCookie.from(AuthConstants.REFRESH_TOKEN_COOKIE_NAME, refreshToken)
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
-                .maxAge(Duration.ofDays(7))
+                .maxAge(Duration.ofMillis(jwtProperties.getRefreshTokenExpiration()))
                 .sameSite("Strict")
                 .build();
     }

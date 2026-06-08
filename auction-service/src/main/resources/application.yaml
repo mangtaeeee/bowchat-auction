@@ -48,9 +48,6 @@ jwt:
   secret: ${JWT_SECRET}
   access-token-expiration: 3600000
 
-internal:
-  secret: ${INTERNAL_SECRET}
-
 oauth2:
   internal-client:
     registration-id: ${OAUTH2_INTERNAL_REGISTRATION_ID:}
@@ -65,6 +62,20 @@ user-service:
 
 product-service:
   url: ${PRODUCT_SERVICE_URL:http://localhost:8082}
+
+app:
+  cors:
+    allowed-origins:
+      - http://localhost:5173
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - "*"
+    allow-credentials: true
 
 outbox:
   relay:

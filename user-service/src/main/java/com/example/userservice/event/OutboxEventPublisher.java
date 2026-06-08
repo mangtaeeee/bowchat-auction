@@ -13,8 +13,6 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class OutboxEventPublisher {
 
-    private static final String USER_CREATED_TOPIC = "user.created";
-
     private final OutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
 
@@ -22,12 +20,12 @@ public class OutboxEventPublisher {
         try {
             String payload = objectMapper.writeValueAsString(event);
             OutboxEvent outboxEvent = OutboxEvent.create(
-                    USER_CREATED_TOPIC,
+                    UserEventConstants.USER_CREATED,
                     String.valueOf(event.userId()),
                     payload
             );
             outboxRepository.save(outboxEvent);
-            log.debug("Outbox event saved: topic={}, userId={}", USER_CREATED_TOPIC, event.userId());
+            log.debug("Outbox event saved: topic={}, userId={}", UserEventConstants.USER_CREATED, event.userId());
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize user.created event", e);
         }

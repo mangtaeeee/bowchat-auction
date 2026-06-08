@@ -1,0 +1,98 @@
+{
+  "realm": "bowchat",
+  "enabled": true,
+  "displayName": "BowChat",
+  "clients": [
+    {
+      "clientId": "auction-service",
+      "name": "auction-service",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "secret": "auction-service-secret",
+      "defaultClientScopes": [
+        "auction.internal.read"
+      ],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "product-service",
+      "name": "product-service",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "secret": "product-service-secret",
+      "defaultClientScopes": [
+        "auction.internal.read"
+      ],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "user-service",
+      "name": "user-service",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "secret": "user-service-secret",
+      "defaultClientScopes": [
+        "auction.internal.read"
+      ],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "chat-service",
+      "name": "chat-service",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "secret": "chat-service-secret",
+      "defaultClientScopes": [
+        "auction.internal.read"
+      ],
+      "optionalClientScopes": []
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "auction.internal.read",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "auction.internal.read",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "scope",
+            "claim.value": "auction.internal.read",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ]
+}
+

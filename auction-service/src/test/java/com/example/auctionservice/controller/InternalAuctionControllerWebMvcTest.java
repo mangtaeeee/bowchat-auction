@@ -2,7 +2,6 @@ package com.example.auctionservice.controller;
 
 import com.example.auctionservice.auth.JwtProvider;
 import com.example.auctionservice.auth.config.SecurityConfig;
-import com.example.auctionservice.auth.filter.InternalServiceAuthenticationFilter;
 import com.example.auctionservice.dto.response.AuctionResponse;
 import com.example.auctionservice.exception.GlobalExceptionHandler;
 import com.example.auctionservice.service.AuctionService;
@@ -24,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = InternalAuctionController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class, InternalServiceAuthenticationFilter.class})
+@Import({SecurityConfig.class, GlobalExceptionHandler.class})
 class InternalAuctionControllerWebMvcTest {
 
     @Autowired
@@ -47,16 +46,6 @@ class InternalAuctionControllerWebMvcTest {
         mockMvc.perform(get("/internal/auctions/1"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED_INTERNAL_API"));
-    }
-
-    @Test
-    void getAuctionAllowsLegacyInternalServiceToken() throws Exception {
-        when(auctionService.findAuctionById(1L)).thenReturn(sampleResponse());
-
-        mockMvc.perform(get("/internal/auctions/1")
-                        .header(InternalServiceAuthenticationFilter.INTERNAL_TOKEN_HEADER, "test-secret"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L));
     }
 
     @Test
@@ -93,4 +82,3 @@ class InternalAuctionControllerWebMvcTest {
         );
     }
 }
-

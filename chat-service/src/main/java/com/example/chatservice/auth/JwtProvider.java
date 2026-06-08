@@ -22,10 +22,10 @@ public class JwtProvider {
 
     public Authentication getAuthentication(String token) {
         Claims claims = parseClaims(token);
-        Long userId     = claims.get("userId", Long.class);
+        Long userId     = claims.get(AuthConstants.JWT_CLAIM_USER_ID, Long.class);
         String email    = claims.getSubject();
-        String nickname = claims.get("nickname", String.class);
-        String role     = claims.get("role", String.class);
+        String nickname = claims.get(AuthConstants.JWT_CLAIM_NICKNAME, String.class);
+        String role     = claims.get(AuthConstants.JWT_CLAIM_ROLE, String.class);
 
         UserPrincipal principal = new UserPrincipal(userId, email, nickname, role);
         return new UsernamePasswordAuthenticationToken(principal, token, principal.getAuthorities());
@@ -42,7 +42,7 @@ public class JwtProvider {
 
     // WebSocket HandshakeInterceptor에서 토큰 추출 시 사용
     public Long getUserId(String token) {
-        return parseClaims(token).get("userId", Long.class);
+        return parseClaims(token).get(AuthConstants.JWT_CLAIM_USER_ID, Long.class);
     }
 
     private Claims parseClaims(String token) {

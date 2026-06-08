@@ -1,11 +1,11 @@
 package com.example.userservice.auth.repository;
 
+import com.example.userservice.auth.AuthConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.time.Duration;
-import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -13,31 +13,27 @@ public class RefreshTokenRepository {
 
     private final StringRedisTemplate redisTemplate;
 
-    private static final String PREFIX = "refresh_token:";
-
-    // 토큰 저장
+    // ?좏겙 ???
     public void save(String email, String refreshToken, long expiration) {
-        redisTemplate.opsForValue().set(PREFIX + email, refreshToken, Duration.ofMillis(expiration));
+        redisTemplate.opsForValue().set(
+                AuthConstants.REFRESH_TOKEN_REDIS_PREFIX + email,
+                refreshToken,
+                Duration.ofMillis(expiration)
+        );
     }
 
-    // 토큰 조회
+    // ?좏겙 議고쉶
     public String findByEmail(String email) {
-        return redisTemplate.opsForValue().get(PREFIX + email);
+        return redisTemplate.opsForValue().get(AuthConstants.REFRESH_TOKEN_REDIS_PREFIX + email);
     }
 
-    public Optional<String> findByKey(String key) {
-        return Optional.ofNullable(redisTemplate.opsForValue().get(key));
-    }
-
-
-    // 토큰 삭제
+    // ?좏겙 ??젣
     public void delete(String email) {
-        redisTemplate.delete(PREFIX + email);
+        redisTemplate.delete(AuthConstants.REFRESH_TOKEN_REDIS_PREFIX + email);
     }
 
-    // 존재 여부
+    // 議댁옱 ?щ?
     public boolean exists(String email) {
-        return Boolean.TRUE.equals(redisTemplate.hasKey(PREFIX + email));
+        return Boolean.TRUE.equals(redisTemplate.hasKey(AuthConstants.REFRESH_TOKEN_REDIS_PREFIX + email));
     }
-
 }

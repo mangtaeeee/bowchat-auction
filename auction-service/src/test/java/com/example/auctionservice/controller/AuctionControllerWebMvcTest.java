@@ -3,7 +3,6 @@ package com.example.auctionservice.controller;
 import com.example.auctionservice.auth.JwtProvider;
 import com.example.auctionservice.auth.UserPrincipal;
 import com.example.auctionservice.auth.config.SecurityConfig;
-import com.example.auctionservice.auth.filter.InternalServiceAuthenticationFilter;
 import com.example.auctionservice.dto.response.AuctionResponse;
 import com.example.auctionservice.entity.AuctionErrorCode;
 import com.example.auctionservice.entity.AuctionException;
@@ -32,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = AuctionController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class, InternalServiceAuthenticationFilter.class})
+@Import({SecurityConfig.class, GlobalExceptionHandler.class})
 class AuctionControllerWebMvcTest {
 
     @Autowired
@@ -49,8 +48,17 @@ class AuctionControllerWebMvcTest {
 
     @Test
     void getAuctionReturnsUnauthorizedWhenAuthenticationIsMissing() throws Exception {
-        // 인증 정보가 없으면 컨트롤러에 진입하기 전에 401 규약으로 응답해야 한다.
-        mockMvc.perform(get("/api/auctions/1"))
+        // 보호된 엔드포인트는 인증 정보가 없으면 컨트롤러 진입 전에 401 규약으로 응답해야 한다.
+        String requestBody = """
+                {
+                  "startingPrice": 1000,
+                  "endTime": "2099-01-01 10:00:00"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auctions/10/start")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
                 .andExpect(jsonPath("$.message").value("인증이 필요합니다."));

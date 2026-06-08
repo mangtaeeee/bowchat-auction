@@ -19,7 +19,10 @@ public class ChatKafkaConsumer {
     private final ObjectMapper objectMapper;
 
     // 일반 채팅 메시지 수신 → MongoDB 저장 + WebSocket 브로드캐스트
-    @KafkaListener(topics = "chat-message", groupId = "chat-service-group")
+    @KafkaListener(
+            topics = "#{T(com.example.bowchat.kafkastarter.event.MessageType).CHAT.getTopicName()}",
+            groupId = "${spring.kafka.consumer.group-id}"
+    )
     public void handleChatMessage(String message) {
         try {
             EventMessage event = objectMapper.readValue(message, EventMessage.class);
@@ -39,7 +42,10 @@ public class ChatKafkaConsumer {
     }
 
     // 경매 입찰 이벤트 수신 → MongoDB 저장 + 경매방 WebSocket 브로드캐스트
-    @KafkaListener(topics = "auction-bid", groupId = "chat-service-group")
+    @KafkaListener(
+            topics = "#{T(com.example.bowchat.kafkastarter.event.MessageType).AUCTION_BID.getTopicName()}",
+            groupId = "${spring.kafka.consumer.group-id}"
+    )
     public void handleAuctionBid(String message) {
         try {
             EventMessage event = objectMapper.readValue(message, EventMessage.class);

@@ -13,21 +13,19 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class UserEventConsumer {
 
-    private static final String USER_CREATED_TOPIC = "user.created";
-
     private final UserCreatedEventProcessor userCreatedEventProcessor;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = USER_CREATED_TOPIC, groupId = "chat-service-group")
+    @KafkaListener(topics = UserEventConstants.USER_CREATED, groupId = "${spring.kafka.consumer.group-id}")
     public void handleUserCreated(String message) {
         UserCreatedEvent event = parseEvent(message);
 
         if (!userCreatedEventProcessor.process(event)) {
-            log.info("Duplicate {} ignored: eventId={}, userId={}", USER_CREATED_TOPIC, event.eventId(), event.userId());
+            log.info("Duplicate {} ignored: eventId={}, userId={}", UserEventConstants.USER_CREATED, event.eventId(), event.userId());
             return;
         }
 
-        log.info("UserSnapshot saved from {}: eventId={}, userId={}", USER_CREATED_TOPIC, event.eventId(), event.userId());
+        log.info("UserSnapshot saved from {}: eventId={}, userId={}", UserEventConstants.USER_CREATED, event.eventId(), event.userId());
     }
 
     private UserCreatedEvent parseEvent(String message) {

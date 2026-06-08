@@ -1,5 +1,6 @@
 package com.example.userservice.auth.service;
 
+import com.example.userservice.auth.AuthConstants;
 import com.example.userservice.auth.dto.AuthResponse;
 import com.example.userservice.auth.jwt.JwtProvider;
 import com.example.userservice.dto.response.UserInfo;
@@ -44,7 +45,7 @@ public class TokenService {
     public String extractRefreshToken(HttpServletRequest request) {
         return Optional.ofNullable(request.getCookies())
                 .flatMap(cookies -> Arrays.stream(cookies)
-                        .filter(c -> "refreshToken".equals(c.getName()))
+                        .filter(c -> AuthConstants.REFRESH_TOKEN_COOKIE_NAME.equals(c.getName()))
                         .map(Cookie::getValue)
                         .findFirst())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "리프레시 토큰이 없습니다."));

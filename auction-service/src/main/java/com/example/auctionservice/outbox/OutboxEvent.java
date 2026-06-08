@@ -65,7 +65,7 @@ public class OutboxEvent {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(length = 500)
+    @Column(length = OutboxConstants.LAST_ERROR_MAX_LENGTH)
     private String lastError;
 
     public static OutboxEvent pending(String aggregateType, Long aggregateId, String eventType, String payload, LocalDateTime now) {

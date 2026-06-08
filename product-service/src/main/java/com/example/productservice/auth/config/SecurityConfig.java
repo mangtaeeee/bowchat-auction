@@ -1,17 +1,19 @@
 package com.example.productservice.auth.config;
 
+import com.example.productservice.auth.AuthConstants;
 import com.example.productservice.auth.JwtProvider;
-import com.example.productservice.auth.filter.InternalServiceAuthenticationFilter;
 import com.example.productservice.auth.filter.JwtAuthenticationFilter;
 import com.example.productservice.exception.ErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -21,16 +23,15 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableConfigurationProperties(CorsProperties.class)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -39,19 +40,19 @@ public class SecurityConfig {
     private final JwtProvider jwtProvider;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
-    private final InternalServiceAuthenticationFilter internalServiceAuthenticationFilter;
+    private final CorsProperties corsProperties;
 
     @Bean
     @Order(1)
     public SecurityFilterChain internalFilterChain(HttpSecurity http, ObjectProvider<JwtDecoder> jwtDecoderProvider) throws Exception {
         http
-                .securityMatcher("/internal/**")
+                .securityMatcher(AuthConstants.INTERNAL_PATH_PATTERN)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().hasAnyAuthority(
-                                InternalServiceAuthenticationFilter.INTERNAL_SERVICE_ROLE,
+                                AuthConstants.INTERNAL_SERVICE_ROLE,
                                 INTERNAL_SCOPE
                         )
                 )
@@ -62,8 +63,7 @@ public class SecurityConfig {
                         .accessDeniedHandler((request, response, ex) ->
                                 writeErrorResponse(response, HttpServletResponse.SC_FORBIDDEN,
                                         "FORBIDDEN_INTERNAL_API", "내부 API 접근 권한이 없습니다."))
-                )
-                .addFilterBefore(internalServiceAuthenticationFilter, BearerTokenAuthenticationFilter.class);
+                );
 
         JwtDecoder jwtDecoder = jwtDecoderProvider.getIfAvailable();
         if (jwtDecoder != null) {
@@ -82,6 +82,7 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/*").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e
@@ -98,10 +99,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
+        config.setAllowedOrigins(corsProperties.allowedOrigins());
+        config.setAllowedMethods(corsProperties.allowedMethods());
+        config.setAllowedHeaders(corsProperties.allowedHeaders());
+        config.setAllowCredentials(corsProperties.allowCredentials());
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

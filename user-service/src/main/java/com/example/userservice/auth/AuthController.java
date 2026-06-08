@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,17 +33,17 @@ public class AuthController {
     public ResponseEntity<AccessTokenResponse> refreshAccessToken(HttpServletRequest request, HttpServletResponse response) {
         String newAccessToken = authService.refreshAccessToken(request);
 
-        response.setHeader("Authorization", "Bearer " + newAccessToken);
+        response.setHeader(HttpHeaders.AUTHORIZATION, AuthConstants.BEARER_PREFIX + newAccessToken);
 
         return ResponseEntity.ok(new AccessTokenResponse(newAccessToken));
     }
 
     @PostMapping("/auth/logout")
     public ResponseEntity<Void> logout(
-            @RequestHeader("Authorization") String bearerToken,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String bearerToken,
             @AuthenticationPrincipal PrincipalDetails user
     ) {
-        String token = bearerToken.substring(7);
+        String token = bearerToken.substring(AuthConstants.BEARER_PREFIX_LENGTH);
         authService.logout(token, user.getUsername());
         return ResponseEntity.ok().build();
     }
