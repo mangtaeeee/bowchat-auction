@@ -72,13 +72,13 @@ jwt:
   access-token-expiration: 3600000
   refresh-token-expiration: 1209600000
 
-# 내부 서비스 간 통신용 시크릿 (외부 노출 금지)
-internal:
-  secret: ${INTERNAL_SECRET:}
-
 oauth2:
   internal-client:
+    # Keycloak issuer, e.g. http://localhost:8080/realms/bowchat
     issuer-uri: ${OAUTH2_ISSUER_URI:}
+    # Keycloak client id used for resource_access role mapping
+    client-id: ${OAUTH2_INTERNAL_CLIENT_ID:}
+    principal-attribute: ${OAUTH2_PRINCIPAL_ATTRIBUTE:preferred_username}
 
 app:
   cors:

@@ -2,7 +2,6 @@ package com.example.chatservice.auth.config;
 
 import com.example.chatservice.auth.AuthConstants;
 import com.example.chatservice.auth.JwtProvider;
-import com.example.chatservice.auth.filter.InternalServiceAuthenticationFilter;
 import com.example.chatservice.auth.filter.JwtAuthenticationFilter;
 import com.example.chatservice.exception.ErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,7 +22,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -41,7 +39,6 @@ public class SecurityConfig {
     private final JwtProvider jwtProvider;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
-    private final InternalServiceAuthenticationFilter internalServiceAuthenticationFilter;
     private final CorsProperties corsProperties;
 
     @Bean
@@ -65,8 +62,7 @@ public class SecurityConfig {
                         .accessDeniedHandler((request, response, ex) ->
                                 writeErrorResponse(response, HttpServletResponse.SC_FORBIDDEN,
                                         "FORBIDDEN_INTERNAL_API", "내부 API 접근 권한이 없습니다."))
-                )
-                .addFilterBefore(internalServiceAuthenticationFilter, BearerTokenAuthenticationFilter.class);
+                );
 
         JwtDecoder jwtDecoder = jwtDecoderProvider.getIfAvailable();
         if (jwtDecoder != null) {

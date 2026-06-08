@@ -1,33 +1,25 @@
 package com.example.auctionservice.auth.config;
 
-import com.example.auctionservice.auth.AuthConstants;
 import feign.RequestInterceptor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 
-import java.util.Optional;
-
 @Configuration
 public class FeignConfig {
 
-    @Value("${internal.secret}")
-    private String internalSecret;
-
-    @Value("${oauth2.internal-client.registration-id:}")
-    private String clientRegistrationId;
-
     @Bean
-    public RequestInterceptor internalAuthenticationInterceptor(Optional<OAuth2AuthorizedClientManager> authorizedClientManager) {
+    public RequestInterceptor internalAuthenticationInterceptor(
+            OAuth2AuthorizedClientManager authorizedClientManager,
+            OAuth2InternalClientProperties properties
+    ) {
         return requestTemplate -> {
-            requestTemplate.header(AuthConstants.INTERNAL_TOKEN_HEADER, internalSecret);
-
-            authorizedClientManager
-                    .map(manager -> OAuth2ClientConfig.resolveAccessToken(manager, clientRegistrationId))
-                    .filter(token -> !token.isBlank())
-                    .ifPresent(token -> requestTemplate.header(HttpHeaders.AUTHORIZATION, AuthConstants.BEARER_PREFIX + token));
+            String token = OAuth2ClientConfig.resolveAccessToken(
+                    authorizedClientManager,
+                    properties.getRegistrationId()
+            );
+            requestTemplate.header(HttpHeaders.AUTHORIZATION, "Bearer " + token);
         };
     }
 }

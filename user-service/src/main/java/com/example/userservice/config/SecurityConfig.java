@@ -2,7 +2,6 @@ package com.example.userservice.config;
 
 import com.example.userservice.auth.AuthConstants;
 import com.example.userservice.auth.CustomAuthenticationProvider;
-import com.example.userservice.auth.jwt.InternalServiceAuthenticationFilter;
 import com.example.userservice.auth.jwt.JwtAuthenticationFilter;
 import com.example.userservice.auth.jwt.JwtProvider;
 import com.example.userservice.auth.oauth.handler.OAuth2SuccessHandler;
@@ -15,11 +14,13 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -29,8 +30,8 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -51,12 +52,15 @@ public class SecurityConfig {
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
-    private final InternalServiceAuthenticationFilter internalServiceAuthenticationFilter;
     private final CorsProperties corsProperties;
 
     @Bean
     @Order(1)
-    public SecurityFilterChain internalFilterChain(HttpSecurity http, ObjectProvider<JwtDecoder> jwtDecoderProvider) throws Exception {
+    public SecurityFilterChain internalFilterChain(
+            HttpSecurity http,
+            ObjectProvider<JwtDecoder> jwtDecoderProvider,
+            ObjectProvider<Converter<Jwt, ? extends AbstractAuthenticationToken>> jwtAuthenticationConverterProvider
+    ) throws Exception {
         http
                 .securityMatcher(AuthConstants.INTERNAL_PATH_PATTERN)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -76,12 +80,18 @@ public class SecurityConfig {
                         .accessDeniedHandler((request, response, ex) ->
                                 writeJson(response, HttpServletResponse.SC_FORBIDDEN,
                                         Map.of("message", "Forbidden internal API")))
-                )
-                .addFilterBefore(internalServiceAuthenticationFilter, BearerTokenAuthenticationFilter.class);
+                );
 
         JwtDecoder jwtDecoder = jwtDecoderProvider.getIfAvailable();
         if (jwtDecoder != null) {
-            http.oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.decoder(jwtDecoder)));
+            Converter<Jwt, ? extends AbstractAuthenticationToken> jwtAuthenticationConverter =
+                    jwtAuthenticationConverterProvider.getIfAvailable();
+            http.oauth2ResourceServer(oauth -> oauth.jwt(jwt -> {
+                jwt.decoder(jwtDecoder);
+                if (jwtAuthenticationConverter != null) {
+                    jwt.jwtAuthenticationConverter(jwtAuthenticationConverter);
+                }
+            }));
         }
 
         return http.build();
