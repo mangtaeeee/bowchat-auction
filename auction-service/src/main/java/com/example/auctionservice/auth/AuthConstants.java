@@ -17,4 +17,5 @@ public final class AuthConstants {
     public static final String JWT_CLAIM_NICKNAME = "nickname";
     public static final String JWT_CLAIM_ROLE = "role";
     public static final String ROLE_PREFIX = "ROLE_";
+    public static final String BLACKLIST_PREFIX = "blacklist:";
 }

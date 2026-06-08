@@ -53,7 +53,7 @@ class InternalAuctionControllerWebMvcTest {
         when(auctionService.findAuctionById(1L)).thenReturn(sampleResponse());
 
         mockMvc.perform(get("/internal/auctions/1")
-                        .with(jwt().authorities(() -> "SCOPE_auction.internal.read")))
+                        .with(jwt().authorities(() -> "SCOPE_user.internal.read")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.productId").value(10L));
@@ -82,3 +82,4 @@ class InternalAuctionControllerWebMvcTest {
         );
     }
 }
+

@@ -2,7 +2,7 @@ package com.example.userservice.auth.service;
 
 import com.example.userservice.auth.AuthConstants;
 import com.example.userservice.auth.dto.AuthResponse;
-import com.example.userservice.auth.jwt.JwtProvider;
+import com.example.userservice.auth.dto.KeycloakTokenResponse;
 import com.example.userservice.dto.response.UserInfo;
 import com.example.userservice.entity.User;
 import jakarta.servlet.http.Cookie;
@@ -21,25 +21,17 @@ import java.util.Optional;
 @Slf4j
 public class TokenService {
 
-    private final JwtProvider jwtProvider;
+    private static final long REFRESH_TOKEN_TTL_FALLBACK_MILLIS = 1_209_600_000L;
+
     private final RefreshTokenService refreshTokenService;
 
-    public AuthResponse issueTokens(User user) {
-        String accessToken = jwtProvider.generateToken(user);
-        String refreshToken = jwtProvider.generateRefreshToken(user.getEmail());
+    public AuthResponse issueTokens(User user, KeycloakTokenResponse keycloakTokenResponse) {
+        String accessToken = keycloakTokenResponse.accessToken();
+        String refreshToken = keycloakTokenResponse.refreshToken();
+        long refreshTokenExpiration = resolveRefreshTokenExpiration(keycloakTokenResponse);
+        refreshTokenService.save(user.getEmail(), refreshToken, refreshTokenExpiration);
 
-        refreshTokenService.save(
-                user.getEmail(),
-                refreshToken,
-                jwtProvider.getRefreshTokenExpiration()
-        );
-
-
-        return AuthResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .userInfo(UserInfo.of(user))
-                .build();
+        return AuthResponse.issued(accessToken, refreshToken, refreshTokenExpiration, UserInfo.of(user));
     }
 
     public String extractRefreshToken(HttpServletRequest request) {
@@ -51,13 +43,6 @@ public class TokenService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "리프레시 토큰이 없습니다."));
     }
 
-    public void validateRefreshToken(String refreshToken) {
-        if (!jwtProvider.validateToken(refreshToken)) {
-            log.warn("리프레시 토큰 검증 실패");
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "유효하지 않은 리프레시 토큰입니다.");
-        }
-    }
-
     public void verifyRefreshTokenInRedis(String email, String refreshToken) {
         String savedRefreshToken = refreshTokenService.findRefreshTokenByEmail(email);
         if (!refreshToken.equals(savedRefreshToken)) {
@@ -66,11 +51,10 @@ public class TokenService {
         }
     }
 
-
-    public String issueNewAccessToken(User user) {
-        String newAccessToken = jwtProvider.generateToken(user);
-        log.info("새로운 액세스 토큰 발급 완료");
-        return newAccessToken;
+    public long resolveRefreshTokenExpiration(KeycloakTokenResponse keycloakTokenResponse) {
+        if (keycloakTokenResponse.refreshExpiresIn() == null) {
+            return REFRESH_TOKEN_TTL_FALLBACK_MILLIS;
+        }
+        return keycloakTokenResponse.refreshExpiresIn() * 1000L;
     }
-
 }

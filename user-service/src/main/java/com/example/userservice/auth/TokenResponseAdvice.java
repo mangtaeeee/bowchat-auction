@@ -1,7 +1,6 @@
 package com.example.userservice.auth;
 
 import com.example.userservice.auth.dto.AuthResponse;
-import com.example.userservice.auth.jwt.JwtProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpHeaders;
@@ -17,8 +16,6 @@ import java.time.Duration;
 @ControllerAdvice
 @RequiredArgsConstructor
 public class TokenResponseAdvice implements ResponseBodyAdvice<AuthResponse> {
-
-    private final JwtProperties jwtProperties;
 
     @Override
     public boolean supports(MethodParameter returnType, Class converterType) {
@@ -39,11 +36,12 @@ public class TokenResponseAdvice implements ResponseBodyAdvice<AuthResponse> {
 
         if (!isMobile(userAgent)) {
             // web에서 요청한 경우, Refresh Token을 쿠키에 설정
-            ResponseCookie refreshCookie = createRefreshTokenCookie(body.refreshToken());
+            ResponseCookie refreshCookie = createRefreshTokenCookie(body.refreshToken(), body.refreshTokenExpiresIn());
             response.getHeaders().add(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
             return AuthResponse.builder()
                     .accessToken(body.accessToken())
+                    .refreshTokenExpiresIn(body.refreshTokenExpiresIn())
                     .userInfo(body.userInfo())
                     .build();
 
@@ -57,12 +55,13 @@ public class TokenResponseAdvice implements ResponseBodyAdvice<AuthResponse> {
         );
     }
 
-    private ResponseCookie createRefreshTokenCookie(String refreshToken) {
+    private ResponseCookie createRefreshTokenCookie(String refreshToken, Long expirationMillis) {
+        long maxAge = expirationMillis == null ? 0L : expirationMillis;
         return ResponseCookie.from(AuthConstants.REFRESH_TOKEN_COOKIE_NAME, refreshToken)
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
-                .maxAge(Duration.ofMillis(jwtProperties.getRefreshTokenExpiration()))
+                .maxAge(Duration.ofMillis(maxAge))
                 .sameSite("Strict")
                 .build();
     }

@@ -265,3 +265,42 @@ Redis (TTL 10분) → 로컬 UserSnapshot → user-service HTTP (Lazy 동기화)
 내부 API 보안:
 Docker Network 격리 + X-Service-Token 헤더 검증
 ```
+---
+
+## 인증 구조 최신화 (2026-06)
+
+상품 서비스의 인증은 이제 `Keycloak JWT 검증` 기준이다.
+예전의 자체 JWT 파싱이나 `X-Service-Token` 설명은 분리 작업 기록이고, 현재 동작 기준은 아래와 같다.
+
+### 현재 상품 서비스 인증 책임
+
+- 일반 사용자 API: Keycloak access token 검증
+- 내부 API(`/internal/**`): Keycloak `client_credentials` 토큰 검증
+- 로그아웃 토큰 차단: Redis blacklist 확인
+- 컨트롤러 호환성 유지: Keycloak JWT를 `UserPrincipal(userId, email, nickname, role)`로 변환
+
+### 일반 사용자 요청 흐름
+
+```text
+Client -> Authorization: Bearer <Keycloak access token>
+       -> product-service SecurityFilterChain
+       -> issuer/public key 검증
+       -> UserPrincipal 변환
+       -> Controller에서 @AuthenticationPrincipal UserPrincipal 사용
+```
+
+### 내부 API 요청 흐름
+
+```text
+product-service -> Keycloak client_credentials
+                -> Bearer Token 발급
+                -> user-service /internal/** 호출
+                -> user-service가 issuer / scope / role 검증
+```
+
+### 현재 전제
+
+- Keycloak access token에 `userId`, `email`, `nickname`, `role` claim이 있어야 한다.
+- `INTERNAL_SECRET`, `X-Service-Token` fallback은 제거됐다.
+- 일반 사용자 인증용 `JWT_SECRET` 공유 구조도 더 이상 운영 기준이 아니다.
+

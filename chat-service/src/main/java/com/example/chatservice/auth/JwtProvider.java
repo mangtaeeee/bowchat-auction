@@ -1,55 +1,34 @@
 package com.example.chatservice.auth;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Component;
-
-import java.security.Key;
 
 @Component
 @RequiredArgsConstructor
 public class JwtProvider {
 
-    private final JwtProperties jwtProperties;
-
-    private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
-    }
-
-    public Authentication getAuthentication(String token) {
-        Claims claims = parseClaims(token);
-        Long userId     = claims.get(AuthConstants.JWT_CLAIM_USER_ID, Long.class);
-        String email    = claims.getSubject();
-        String nickname = claims.get(AuthConstants.JWT_CLAIM_NICKNAME, String.class);
-        String role     = claims.get(AuthConstants.JWT_CLAIM_ROLE, String.class);
-
-        UserPrincipal principal = new UserPrincipal(userId, email, nickname, role);
-        return new UsernamePasswordAuthenticationToken(principal, token, principal.getAuthorities());
-    }
+    private final JwtDecoder jwtDecoder;
 
     public boolean validateToken(String token) {
         try {
-            parseClaims(token);
+            jwtDecoder.decode(token);
             return true;
         } catch (Exception e) {
             return false;
         }
     }
 
-    // WebSocket HandshakeInterceptor에서 토큰 추출 시 사용
     public Long getUserId(String token) {
-        return parseClaims(token).get(AuthConstants.JWT_CLAIM_USER_ID, Long.class);
-    }
-
-    private Claims parseClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        Jwt jwt = jwtDecoder.decode(token);
+        Object claim = jwt.getClaim(AuthConstants.JWT_CLAIM_USER_ID);
+        if (claim instanceof Number number) {
+            return number.longValue();
+        }
+        if (claim instanceof String value) {
+            return Long.parseLong(value);
+        }
+        throw new IllegalStateException("Keycloak access token에 userId claim이 없습니다.");
     }
 }
