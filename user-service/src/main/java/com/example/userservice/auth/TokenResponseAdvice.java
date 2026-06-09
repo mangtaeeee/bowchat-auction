@@ -39,11 +39,12 @@ public class TokenResponseAdvice implements ResponseBodyAdvice<AuthResponse> {
             ResponseCookie refreshCookie = createRefreshTokenCookie(body.refreshToken(), body.refreshTokenExpiresIn());
             response.getHeaders().add(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
-            return AuthResponse.builder()
-                    .accessToken(body.accessToken())
-                    .refreshTokenExpiresIn(body.refreshTokenExpiresIn())
-                    .userInfo(body.userInfo())
-                    .build();
+            return new AuthResponse(
+                    body.accessToken(),
+                    null,
+                    body.refreshTokenExpiresIn(),
+                    body.userInfo()
+            );
 
         }
         return body;

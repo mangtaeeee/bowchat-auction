@@ -2,6 +2,7 @@ package com.example.userservice.config;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -26,12 +27,14 @@ public class OAuth2InternalAuthConfig {
 
     @Bean
     @ConditionalOnProperty(prefix = "oauth2.internal-client", name = "issuer-uri")
+    @Qualifier("internalJwtDecoder")
     public JwtDecoder jwtDecoder(OAuth2InternalClientProperties properties) {
         return JwtDecoders.fromIssuerLocation(properties.getIssuerUri());
     }
 
     @Bean
     @ConditionalOnProperty(prefix = "oauth2.internal-client", name = "issuer-uri")
+    @Qualifier("internalJwtAuthenticationConverter")
     public Converter<Jwt, ? extends AbstractAuthenticationToken> jwtAuthenticationConverter(
             OAuth2InternalClientProperties properties
     ) {

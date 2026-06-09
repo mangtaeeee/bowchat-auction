@@ -20,15 +20,18 @@ public class UserJwtAuthenticationConfig {
 
     @Bean
     @ConditionalOnProperty(prefix = "oauth2.internal-client", name = "issuer-uri")
-    public Converter<Jwt, ? extends AbstractAuthenticationToken> userJwtAuthenticationConverter() {
-        return jwt -> {
-            UserPrincipal principal = new UserPrincipal(
-                    extractUserId(jwt),
-                    firstText(jwt, "email", "preferred_username", "sub"),
-                    firstText(jwt, AuthConstants.JWT_CLAIM_NICKNAME, "preferred_username", "email", "sub"),
-                    resolveRole(jwt)
-            );
-            return new UsernamePasswordAuthenticationToken(principal, jwt, principal.getAuthorities());
+    public Converter<Jwt, AbstractAuthenticationToken> userJwtAuthenticationConverter() {
+        return new Converter<>() {
+            @Override
+            public AbstractAuthenticationToken convert(Jwt jwt) {
+                UserPrincipal principal = new UserPrincipal(
+                        extractUserId(jwt),
+                        firstText(jwt, "email", "preferred_username", "sub"),
+                        firstText(jwt, AuthConstants.JWT_CLAIM_NICKNAME, "preferred_username", "email", "sub"),
+                        resolveRole(jwt)
+                );
+                return new UsernamePasswordAuthenticationToken(principal, jwt, principal.getAuthorities());
+            }
         };
     }
 

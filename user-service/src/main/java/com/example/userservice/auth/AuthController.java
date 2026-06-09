@@ -2,6 +2,7 @@ package com.example.userservice.auth;
 
 import com.example.userservice.auth.dto.AccessTokenResponse;
 import com.example.userservice.auth.dto.AuthResponse;
+import com.example.userservice.auth.dto.CurrentUserResponse;
 import com.example.userservice.auth.service.AuthService;
 import com.example.userservice.dto.request.LoginRequest;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -43,6 +45,11 @@ public class AuthController {
         ).toString());
 
         return ResponseEntity.ok(new AccessTokenResponse(newAccessToken));
+    }
+
+    @GetMapping("/auth/me")
+    public ResponseEntity<CurrentUserResponse> currentUser(Authentication authentication) {
+        return ResponseEntity.ok(authService.currentUser(authentication));
     }
 
     @PostMapping("/auth/logout")

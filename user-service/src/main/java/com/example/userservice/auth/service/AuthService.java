@@ -1,8 +1,12 @@
 package com.example.userservice.auth.service;
 
 import com.example.userservice.auth.AuthConstants;
+import com.example.userservice.auth.UserJwtAuthenticationToken;
+import com.example.userservice.auth.UserPrincipal;
+import com.example.userservice.auth.dto.CurrentUserResponse;
 import com.example.userservice.auth.dto.AuthResponse;
 import com.example.userservice.auth.dto.KeycloakTokenResponse;
+import com.example.userservice.config.AuthFeatureProperties;
 import com.example.userservice.dto.request.LoginRequest;
 import com.example.userservice.entity.PrincipalDetails;
 import com.example.userservice.entity.User;
@@ -15,6 +19,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -29,8 +35,16 @@ public class AuthService {
     private final TokenService tokenService;
     private final RedisTemplate<String, Object> redisTemplate;
     private final KeycloakAuthService keycloakAuthService;
+    private final AuthFeatureProperties authFeatureProperties;
 
     public AuthResponse login(LoginRequest loginRequest) {
+        if (!authFeatureProperties.isLocalPasswordLoginEnabled()) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "로컬 비밀번호 로그인은 비활성화되었습니다. Keycloak/OAuth2 로그인 경로를 사용하세요."
+            );
+        }
+
         log.info("CustomAuthenticationProvider로 인증 시도");
 
         Authentication authentication = authenticationManager.authenticate(
@@ -70,6 +84,17 @@ public class AuthService {
         );
     }
 
+    public CurrentUserResponse currentUser(Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+        if (authentication instanceof UserJwtAuthenticationToken userAuthentication) {
+            return CurrentUserResponse.from(userAuthentication.getPrincipal());
+        }
+        if (principal instanceof PrincipalDetails principalDetails) {
+            return CurrentUserResponse.from(principalDetails.getUser());
+        }
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증된 사용자 정보를 해석할 수 없습니다.");
+    }
+
     public void logout(String token, Authentication authentication) {
         String email = resolveAuthenticatedEmail(authentication);
         String refreshToken = refreshTokenService.findRefreshTokenByEmail(email);
@@ -89,6 +114,9 @@ public class AuthService {
 
     private String resolveAuthenticatedEmail(Authentication authentication) {
         Object principal = authentication.getPrincipal();
+        if (authentication instanceof UserJwtAuthenticationToken userAuthentication) {
+            return userAuthentication.getPrincipal().email();
+        }
         if (principal instanceof Jwt jwt) {
             String preferredUsername = jwt.getClaimAsString("preferred_username");
             if (preferredUsername != null && !preferredUsername.isBlank()) {
@@ -105,6 +133,14 @@ public class AuthService {
     }
 
     private long resolveExpirationMillis(Authentication authentication) {
+        if (authentication instanceof UserJwtAuthenticationToken userAuthentication) {
+            Instant expiresAt = userAuthentication.getJwt().getExpiresAt();
+            if (expiresAt == null) {
+                return 0L;
+            }
+            return expiresAt.toEpochMilli() - System.currentTimeMillis();
+        }
+
         Object principal = authentication.getPrincipal();
         if (!(principal instanceof Jwt jwt)) {
             return 0L;
