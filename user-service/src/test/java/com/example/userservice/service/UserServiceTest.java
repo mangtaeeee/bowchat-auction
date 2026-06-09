@@ -1,6 +1,6 @@
 package com.example.userservice.service;
 
-import com.example.userservice.dto.request.SingUpRequest;
+import com.example.userservice.dto.request.SignUpRequest;
 import com.example.userservice.entity.User;
 import com.example.userservice.event.OutboxEventPublisher;
 import com.example.userservice.event.UserCreatedEvent;
@@ -46,7 +46,7 @@ class UserServiceTest {
     @Test
     void signupCreatesUserAndPublishesOutboxEvent() {
         // given: 신규 회원가입 요청과 저장 성공 상황을 준비한다.
-        SingUpRequest request = new SingUpRequest("user@test.com", "plain-password", "tester");
+        SignUpRequest request = new SignUpRequest("user@test.com", "plain-password", "tester");
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("encoded-password");
@@ -78,7 +78,7 @@ class UserServiceTest {
     @Test
     void signupRejectsDuplicateEmail() {
         // given: 이미 같은 이메일이 존재하는 상황을 만든다.
-        SingUpRequest request = new SingUpRequest("duplicate@test.com", "plain-password", "tester");
+        SignUpRequest request = new SignUpRequest("duplicate@test.com", "plain-password", "tester");
         when(userRepository.existsByEmail(request.email())).thenReturn(true);
 
         // when/then: 중복 이메일이면 409를 던지고 후속 작업은 하지 않아야 한다.
@@ -91,3 +91,4 @@ class UserServiceTest {
         verifyNoInteractions(passwordEncoder, outboxEventPublisher);
     }
 }
+

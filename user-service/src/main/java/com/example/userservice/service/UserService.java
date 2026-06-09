@@ -1,6 +1,6 @@
 package com.example.userservice.service;
 
-import com.example.userservice.dto.request.SingUpRequest;
+import com.example.userservice.dto.request.SignUpRequest;
 import com.example.userservice.dto.request.UserSnapshot;
 import com.example.userservice.entity.User;
 import com.example.userservice.event.OutboxEventPublisher;
@@ -25,7 +25,7 @@ public class UserService {
     private final KeycloakAuthService keycloakAuthService;
 
     @Transactional
-    public void signup(SingUpRequest request) {
+    public void signup(SignUpRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 존재하는 이메일입니다.");
         }
@@ -45,3 +45,4 @@ public class UserService {
         return UserSnapshot.of(user);
     }
 }
+

@@ -461,7 +461,9 @@ role
 남아 있는 과도기:
 
 - 로그인 시작 엔드포인트는 아직 `user-service`가 제공하지만, 실제 인증과 토큰 발급은 Keycloak이 담당한다.
+- `/auth/me`, `APP_AUTH_LOCAL_PASSWORD_LOGIN_ENABLED` 같은 전환용 API/스위치가 남아 있다.
 - Google/Kakao provider의 실제 client id/secret 연결은 Keycloak admin console 또는 realm import 이후 운영값으로 마무리해야 한다.
+- Keycloak access token에 `userId`, `email`, `nickname`, `role`가 실제로 실리는지 운영 설정 기준으로 검증해야 한다.
 
 ---
 
@@ -617,7 +619,9 @@ OAUTH2_SCOPES=user.internal.read
 - `INTERNAL_SECRET`는 더 이상 사용하지 않는다.
 - `JWT_SECRET`도 user-service에서는 더 이상 사용하지 않는다.
 - 일반 사용자 access token을 제대로 해석하려면 Keycloak access token에 `userId`, `nickname`, `role` claim이 포함되도록 protocol mapper를 맞춰야 한다.
-- 남은 과제는 Keycloak에 Google/Kakao identity provider를 실제 운영 값으로 연결하는 것이다.
+- `APP_AUTH_LOCAL_PASSWORD_LOGIN_ENABLED`로 `/auth/login` 비밀번호 로그인을 과도기적으로 켜고 끌 수 있다.
+- 현재 코드 기준 남은 Keycloak 작업은 애플리케이션 코드보다 실제 Keycloak 설정과 운영값 연결에 가깝다.
+- 대표적으로 Google/Kakao identity provider 운영값 연결, `bowchat.user.claims` scope 연결, claim mapper 검증이 남아 있다.
 - 현재 내부 API scope는 `user.internal.read`로 통일되어 있다.
 
 ---
@@ -636,7 +640,8 @@ Client -> /auth/login
        -> Keycloak token endpoint(password grant)
        -> Keycloak access token / refresh token 발급
        -> refresh token 저장
-       -> access token 반환
+       -> access token 반환 + Authorization 헤더 설정
+       -> web 요청이면 refresh token은 HttpOnly 쿠키로 저장
 ```
 
 ### 리프레시
@@ -648,7 +653,7 @@ Client -> /auth/refresh
        -> Keycloak token endpoint(refresh_token grant)
        -> 새 access token / refresh token 발급
        -> refresh token 교체 저장
-       -> 새 access token 반환
+       -> 새 access token 반환 + Authorization 헤더 설정
 ```
 
 ### 로그아웃
@@ -688,11 +693,21 @@ auction/chat/product-service
 - refresh token 세션 연결 관리
 - 로그아웃 API 제공
 - access token blacklist 등록
+- `/auth/me`로 현재 로그인 사용자 정보 조회 제공
+
+### 현재 코드 기준 완료된 Keycloak 연동
+
+- 일반 사용자 access token을 Keycloak JWT 기준으로 검증
+- Keycloak JWT를 `UserPrincipal(userId, email, nickname, role)`로 변환
+- OAuth2 로그인 성공 시 access token을 URL에 노출하지 않고 refresh token만 쿠키로 저장
+- `/auth/refresh` 이후 `/auth/me`로 현재 사용자 정보 조회 가능
+- 로컬 비밀번호 로그인 종료를 위한 feature flag 추가 (`APP_AUTH_LOCAL_PASSWORD_LOGIN_ENABLED`)
 
 ### 아직 남은 과도기
 
-- 애플리케이션 코드는 이미 Keycloak 브로커 기준으로 전환됐다.
-- 최종적으로는 소셜 로그인도 Keycloak로 수렴하는 것이 목표다.
+- 애플리케이션 코드는 이미 Keycloak 브로커 기준으로 거의 전환됐다.
+- 아직 남은 것은 Keycloak admin console/realm 설정과 실제 클라이언트 연동 검증이다.
+- 최종적으로는 로컬 비밀번호 로그인도 제거하고 Keycloak/OAuth2 로그인만 남기는 것이 목표다.
 
 ### Keycloak 브로커 추가 설정
 
@@ -730,9 +745,10 @@ OAuth2 로그인 후 클라이언트 처리:
 1. 사용자는 `/oauth2/authorization/google|kakao|keycloak`로 로그인 시작
 2. 로그인 성공 후 user-service는 `refresh token`만 `HttpOnly` 쿠키로 저장
 3. `access token`은 URL query string으로 전달하지 않는다
-4. 웹/모바일 클라이언트는 리다이렉트 직후 `/auth/refresh`를 호출해서 새 access token을 받아야 한다
-5. `/auth/refresh` 성공 후에는 `/auth/me`를 호출해서 현재 로그인 사용자 정보(`userId`, `email`, `nickname`, `role`)를 조회할 수 있다
-6. 이후 API 호출은 응답 헤더 또는 바디로 받은 access token을 `Authorization: Bearer ...`에 담아 사용한다
+4. 브라우저는 현재 `/view/product`로, 비브라우저 클라이언트는 `http://localhost:3000/oauth2/success`로 리다이렉트된다
+5. 웹/모바일 클라이언트는 리다이렉트 직후 `/auth/refresh`를 호출해서 새 access token을 받아야 한다
+6. `/auth/refresh` 성공 후에는 `/auth/me`를 호출해서 현재 로그인 사용자 정보(`userId`, `email`, `nickname`, `role`)를 조회할 수 있다
+7. 이후 API 호출은 응답 헤더 또는 바디로 받은 access token을 `Authorization: Bearer ...`에 담아 사용한다
 
 이유:
 - access token을 URL에 붙이면 브라우저 히스토리, 프록시 로그, referer로 유출될 수 있다.

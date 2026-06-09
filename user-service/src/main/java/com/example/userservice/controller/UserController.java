@@ -1,6 +1,6 @@
 package com.example.userservice.controller;
 
-import com.example.userservice.dto.request.SingUpRequest;
+import com.example.userservice.dto.request.SignUpRequest;
 import com.example.userservice.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +16,9 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/user/signup")
-    public void signup(@RequestBody SingUpRequest request) {
+    public void signup(@RequestBody SignUpRequest request) {
         userService.signup(request);
     }
 
 }
+
