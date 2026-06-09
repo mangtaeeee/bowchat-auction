@@ -1,7 +1,7 @@
 package com.example.userservice.entity;
 
 
-import com.example.userservice.dto.request.SingUpRequest;
+import com.example.userservice.dto.request.SignUpRequest;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -59,7 +59,7 @@ public class User {
 
 
 
-    public static User createLocalUserFromRequest(SingUpRequest signInRequest, String password) {
+    public static User createLocalUserFromRequest(SignUpRequest signInRequest, String password) {
         return User.builder()
                 .email(signInRequest.email())
                 .password(password)
@@ -71,3 +71,4 @@ public class User {
 
 
 }
+
