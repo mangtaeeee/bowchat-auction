@@ -56,13 +56,11 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             ).toString());
         }
 
-        String accessToken = authorizedClient.getAccessToken().getTokenValue();
-
-        // 브라우저인지 모바일인지에 따라 리다이렉트 URL 지정
+        // access token은 URL에 노출하지 않고, 클라이언트가 refresh cookie로 후속 교환하도록 한다.
         String userAgent = request.getHeader("User-Agent");
         String redirectUrl = userAgent != null && userAgent.contains("Mozilla")
-                ? "/view/product?token=" + accessToken  // 웹
-                : "http://localhost:3000/oauth2/success?token=" + accessToken; // 모바일/React
+                ? "/view/product"
+                : "http://localhost:3000/oauth2/success";
 
         response.sendRedirect(redirectUrl);
     }

@@ -52,6 +52,7 @@ spring:
               - openid
               - profile
               - email
+              - bowchat.user.claims
         provider:
           keycloak:
             issuer-uri: ${KEYCLOAK_ISSUER_URI:${OAUTH2_ISSUER_URI:}}
@@ -74,6 +75,8 @@ keycloak:
     admin-client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}
 
 app:
+  auth:
+    local-password-login-enabled: ${APP_AUTH_LOCAL_PASSWORD_LOGIN_ENABLED:true}
   cors:
     allowed-origins:
       - http://localhost:5173

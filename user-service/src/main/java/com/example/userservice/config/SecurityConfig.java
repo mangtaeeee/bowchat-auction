@@ -2,6 +2,7 @@ package com.example.userservice.config;
 
 import com.example.userservice.auth.AuthConstants;
 import com.example.userservice.auth.CustomAuthenticationProvider;
+import com.example.userservice.auth.UserJwtAuthenticationToken;
 import com.example.userservice.auth.filter.AccessTokenBlacklistFilter;
 import com.example.userservice.auth.oauth.config.KeycloakAuthorizationRequestResolver;
 import com.example.userservice.auth.oauth.handler.OAuth2SuccessHandler;
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,7 +46,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Configuration
 @EnableWebSecurity
-@EnableConfigurationProperties(CorsProperties.class)
+@EnableConfigurationProperties({CorsProperties.class, AuthFeatureProperties.class})
 public class SecurityConfig {
 
     private static final String INTERNAL_SCOPE = "SCOPE_user.internal.read";
@@ -59,7 +61,8 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain internalFilterChain(
             HttpSecurity http,
-            ObjectProvider<JwtDecoder> jwtDecoderProvider,
+            @Qualifier("internalJwtDecoder") ObjectProvider<JwtDecoder> jwtDecoderProvider,
+            @Qualifier("internalJwtAuthenticationConverter")
             ObjectProvider<Converter<Jwt, ? extends AbstractAuthenticationToken>> jwtAuthenticationConverterProvider
     ) throws Exception {
         http
@@ -102,7 +105,8 @@ public class SecurityConfig {
     @Order(2)
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            ObjectProvider<JwtDecoder> jwtDecoderProvider,
+            @Qualifier("userJwtDecoder") ObjectProvider<JwtDecoder> jwtDecoderProvider,
+            @Qualifier("userJwtAuthenticationConverter")
             ObjectProvider<Converter<Jwt, ? extends AbstractAuthenticationToken>> jwtAuthenticationConverterProvider,
             ObjectProvider<OAuth2AuthorizationRequestResolver> authorizationRequestResolverProvider
     ) throws Exception {

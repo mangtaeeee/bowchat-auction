@@ -707,9 +707,40 @@ Google/Kakao 소셜 로그인은 이제 애플리케이션이 직접 provider를
 - 각 provider에서 access token에 사용자 email 제공
 - `bowchat.user.claims` scope가 login client와 browser client에 포함
 
+권장 매퍼 설정:
+- client scope: `bowchat.user.claims`
+- mapper 1: user attribute `userId` -> token claim `userId` (`String` 또는 `long`으로 일관되게 유지)
+- mapper 2: user attribute `nickname` -> token claim `nickname`
+- mapper 3: user attribute `role` -> token claim `role`
+- mapper 4: 기본 email claim이 비어 있지 않도록 `email` scope와 email mapper 유지
+- 위 매퍼는 최소 `access token`에는 포함, 가능하면 `userinfo`에도 같이 노출
+
+점검 순서:
+1. Keycloak 사용자 attributes에 `userId`, `nickname`, `role`가 실제로 저장되는지 확인
+2. `bowchat.user.claims` client scope가 `bowchat-web`, `bowchat-login`에 연결됐는지 확인
+3. Google/Kakao 로그인 후 access token payload에 `userId`, `email`, `nickname`, `role`가 모두 존재하는지 확인
+4. 값이 빠지면 provider 설정이 아니라 mapper 또는 client scope 연결 문제로 먼저 본다
+
 애플리케이션 엔드포인트:
 - `/oauth2/authorization/google` -> Keycloak + `kc_idp_hint=google`
 - `/oauth2/authorization/kakao` -> Keycloak + `kc_idp_hint=kakao`
 - `/oauth2/authorization/keycloak` -> Keycloak 기본 로그인 화면
+
+OAuth2 로그인 후 클라이언트 처리:
+1. 사용자는 `/oauth2/authorization/google|kakao|keycloak`로 로그인 시작
+2. 로그인 성공 후 user-service는 `refresh token`만 `HttpOnly` 쿠키로 저장
+3. `access token`은 URL query string으로 전달하지 않는다
+4. 웹/모바일 클라이언트는 리다이렉트 직후 `/auth/refresh`를 호출해서 새 access token을 받아야 한다
+5. `/auth/refresh` 성공 후에는 `/auth/me`를 호출해서 현재 로그인 사용자 정보(`userId`, `email`, `nickname`, `role`)를 조회할 수 있다
+6. 이후 API 호출은 응답 헤더 또는 바디로 받은 access token을 `Authorization: Bearer ...`에 담아 사용한다
+
+이유:
+- access token을 URL에 붙이면 브라우저 히스토리, 프록시 로그, referer로 유출될 수 있다.
+- refresh token은 `HttpOnly` 쿠키에 두고, access token만 짧게 재발급해서 쓰는 편이 안전하다.
+
+로컬 비밀번호 로그인 과도기 제어:
+- `APP_AUTH_LOCAL_PASSWORD_LOGIN_ENABLED=true` 이면 기존 `/auth/login` 비밀번호 로그인 유지
+- `APP_AUTH_LOCAL_PASSWORD_LOGIN_ENABLED=false` 이면 `/auth/login`은 차단되고 Keycloak/OAuth2 로그인만 허용
+- 운영에서 최종 전환할 때 이 값을 `false`로 내리면 password grant 제거 단계로 이동하기 쉽다
 
 
