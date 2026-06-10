@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -100,11 +101,74 @@ class OAuth2SuccessHandlerTest {
         assertThat(response.getRedirectedUrl()).isEqualTo("/view/product");
         ArgumentCaptor<Long> ttlCaptor = ArgumentCaptor.forClass(Long.class);
         verify(refreshTokenService).save(
-                org.mockito.ArgumentMatchers.eq("user@test.com"),
-                org.mockito.ArgumentMatchers.eq("refresh-token"),
+                eq("user@test.com"),
+                eq("refresh-token"),
                 ttlCaptor.capture()
         );
         // 만료 시간은 테스트 실행 시점에 따라 조금씩 달라질 수 있으므로 범위로 검증한다.
         assertThat(ttlCaptor.getValue()).isPositive().isLessThanOrEqualTo(600_000L);
+        assertThat(response.getHeader("Set-Cookie"))
+                .contains("refreshToken=refresh-token")
+                .contains("HttpOnly")
+                .contains("Secure");
+    }
+
+    @Test
+    void onAuthenticationSuccessRedirectsNonBrowserClientToMobileCallback() throws Exception {
+        OAuth2SuccessHandler handler = new OAuth2SuccessHandler(authorizedClientService, refreshTokenService);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("User-Agent", "okhttp/4.12.0");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        DefaultOidcUser oidcUser = new DefaultOidcUser(
+                List.of(new SimpleGrantedAuthority("USER")),
+                new OidcIdToken(
+                        "id-token",
+                        Instant.now(),
+                        Instant.now().plusSeconds(300),
+                        Map.of(
+                                "sub", "sub-123",
+                                "email", "user@test.com"
+                        )
+                )
+        );
+        OAuth2AuthenticationToken authentication = new OAuth2AuthenticationToken(
+                oidcUser,
+                oidcUser.getAuthorities(),
+                "keycloak"
+        );
+        OAuth2AuthorizedClient authorizedClient = new OAuth2AuthorizedClient(
+                ClientRegistration.withRegistrationId("keycloak")
+                        .clientId("bowchat-web")
+                        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                        .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
+                        .authorizationUri("https://issuer.example/auth")
+                        .tokenUri("https://issuer.example/token")
+                        .jwkSetUri("https://issuer.example/jwks")
+                        .issuerUri("https://issuer.example")
+                        .userInfoUri("https://issuer.example/userinfo")
+                        .userNameAttributeName("sub")
+                        .clientName("keycloak")
+                        .build(),
+                authentication.getName(),
+                new OAuth2AccessToken(
+                        OAuth2AccessToken.TokenType.BEARER,
+                        "access-token",
+                        Instant.now(),
+                        Instant.now().plusSeconds(300)
+                ),
+                new OAuth2RefreshToken(
+                        "refresh-token",
+                        Instant.now(),
+                        Instant.now().plusSeconds(600)
+                )
+        );
+
+        when(authorizedClientService.loadAuthorizedClient("keycloak", authentication.getName()))
+                .thenReturn(authorizedClient);
+
+        handler.onAuthenticationSuccess(request, response, authentication);
+
+        assertThat(response.getRedirectedUrl()).isEqualTo("http://localhost:3000/oauth2/success");
     }
 }

@@ -370,7 +370,7 @@ public RequestInterceptor internalAuthenticationInterceptor(
 - `auction-service`, `chat-service`, `product-service`의 일반 API 인증 체인도 Keycloak JWT 검증으로 전환했다.
 - 각 서비스는 Keycloak access token을 기존 `UserPrincipal(userId, email, nickname, role)` 형태로 변환해서 사용한다.
 - 로그아웃된 access token은 Redis blacklist로 즉시 무효화한다.
-- Google/Kakao 소셜 로그인도 이제 Keycloak 브로커 경유를 기준으로 동작한다.
+- Google/Kakao 소셜 로그인도 Keycloak 브로커 경유 구조로 전환했다.
 
 구체적인 적용 방식:
 
@@ -462,8 +462,8 @@ role
 
 - 로그인 시작 엔드포인트는 아직 `user-service`가 제공하지만, 실제 인증과 토큰 발급은 Keycloak이 담당한다.
 - `/auth/me`, `APP_AUTH_LOCAL_PASSWORD_LOGIN_ENABLED` 같은 전환용 API/스위치가 남아 있다.
-- Google/Kakao provider의 실제 client id/secret 연결은 Keycloak admin console 또는 realm import 이후 운영값으로 마무리해야 한다.
-- Keycloak access token에 `userId`, `email`, `nickname`, `role`가 실제로 실리는지 운영 설정 기준으로 검증해야 한다.
+- Google/Kakao provider 연결은 Keycloak admin console 또는 realm import 기준으로 운영값만 마무리하면 된다.
+- Keycloak access token claim 매핑(`userId`, `email`, `nickname`, `role`)도 운영 설정 기준 최종 점검만 남아 있다.
 
 ---
 
@@ -705,14 +705,32 @@ auction/chat/product-service
 
 ### 아직 남은 과도기
 
-- 애플리케이션 코드는 이미 Keycloak 브로커 기준으로 거의 전환됐다.
-- 아직 남은 것은 Keycloak admin console/realm 설정과 실제 클라이언트 연동 검증이다.
+- 애플리케이션 코드는 이미 Keycloak 브로커 기준으로 전환 완료 상태다.
+- 남은 것은 Keycloak admin console/realm 운영 설정 마무리와 최종 클라이언트 점검이다.
 - 최종적으로는 로컬 비밀번호 로그인도 제거하고 Keycloak/OAuth2 로그인만 남기는 것이 목표다.
 
 ### Keycloak 브로커 추가 설정
 
 Google/Kakao 소셜 로그인은 이제 애플리케이션이 직접 provider를 호출하지 않고, Keycloak이 broker 역할을 맡는다.
 따라서 Keycloak admin console 또는 realm import 이후 추가 설정이 필요하다.
+
+### 2026-06-09 로컬 검증 결과
+
+구현 및 배선 확인 완료:
+- `http://localhost:8080/realms/bowchat/.well-known/openid-configuration` 응답이 `200`으로 확인됐다.
+- `http://localhost:8081/oauth2/authorization/keycloak` 호출 시 Keycloak authorization endpoint로 `302` 리다이렉트된다.
+- 리다이렉트 URL에는 `client_id=bowchat-web`, `redirect_uri=http://localhost:8081/login/oauth2/code/keycloak`가 포함된다.
+- `user-service`는 OAuth2 시작 시 `scope=openid profile email bowchat.user.claims`를 요청한다.
+
+운영 마무리 점검:
+- 실제 브라우저 로그인 성공 후 `/login/oauth2/code/keycloak` 콜백까지 한 번 더 확인
+- 로그인 직후 발급된 access token 안에 `userId`, `email`, `nickname`, `role`가 포함되는지 최종 확인
+- Google/Kakao identity provider 운영 연결 상태 최종 확인
+
+추가 점검 메모:
+- 현재 realm의 공개 OIDC metadata `scopes_supported`에는 `openid`, `auction.internal.read`, `offline_access`만 노출된다.
+- `bowchat.user.claims`는 애플리케이션 요청 scope에 포함돼 있으므로 Keycloak 쪽 client scope/mapper 연결 상태만 최종 점검하면 된다.
+- Keycloak admin API를 `KEYCLOAK_ADMIN_CLIENT_ID`/`KEYCLOAK_ADMIN_CLIENT_SECRET`로 조회하려 했지만 이 세션에서는 `401 Unauthorized`가 반환됐다. admin console에서 직접 확인하거나 admin 권한 설정을 다시 보면 된다.
 
 필수 설정:
 - client: `bowchat-web`
@@ -735,6 +753,7 @@ Google/Kakao 소셜 로그인은 이제 애플리케이션이 직접 provider를
 2. `bowchat.user.claims` client scope가 `bowchat-web`, `bowchat-login`에 연결됐는지 확인
 3. Google/Kakao 로그인 후 access token payload에 `userId`, `email`, `nickname`, `role`가 모두 존재하는지 확인
 4. 값이 빠지면 provider 설정이 아니라 mapper 또는 client scope 연결 문제로 먼저 본다
+5. admin API가 계속 `401`이면 `bowchat-admin` client secret, service account 활성화, realm-management role 부여 상태를 먼저 점검한다
 
 애플리케이션 엔드포인트:
 - `/oauth2/authorization/google` -> Keycloak + `kc_idp_hint=google`
