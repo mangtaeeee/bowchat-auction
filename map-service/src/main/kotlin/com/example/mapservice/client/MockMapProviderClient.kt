@@ -1,6 +1,7 @@
 package com.example.mapservice.client
 
 import com.example.mapservice.region.model.RegionInfo
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import kotlin.math.abs
 import kotlin.math.pow
@@ -17,6 +18,7 @@ import kotlin.math.pow
  * 3. 실제 Kakao/Naver client로 교체할 때 인터페이스는 유지한다.
  */
 @Component
+@Profile("dev | test")
 class MockMapProviderClient : MapProviderClient {
 
     override fun resolveRegion(latitude: Double, longitude: Double): RegionInfo {

@@ -1,8 +1,10 @@
 package com.example.mapservice.exception
 
+import jakarta.validation.ConstraintViolationException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.validation.BindException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -37,6 +39,34 @@ class GlobalExceptionHandler {
         }
 
         log.warn("Validation 실패: {}", context)
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ErrorResponse.of("VALIDATION_ERROR", "요청 값이 올바르지 않습니다.", context))
+    }
+
+    @ExceptionHandler(BindException::class)
+    fun handleBindException(ex: BindException): ResponseEntity<ErrorResponse> {
+        val context = linkedMapOf<String, Any>()
+        ex.bindingResult.fieldErrors.forEach { error ->
+            context[error.field] = error.defaultMessage ?: "유효하지 않은 값입니다."
+        }
+
+        log.warn("Bind validation 실패: {}", context)
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ErrorResponse.of("VALIDATION_ERROR", "요청 값이 올바르지 않습니다.", context))
+    }
+
+    @ExceptionHandler(ConstraintViolationException::class)
+    fun handleConstraintViolationException(ex: ConstraintViolationException): ResponseEntity<ErrorResponse> {
+        val context = linkedMapOf<String, Any>()
+        ex.constraintViolations.forEach { violation ->
+            val path = violation.propertyPath.toString()
+            val fieldName = path.substringAfterLast('.')
+            context[fieldName] = violation.message
+        }
+
+        log.warn("Constraint validation 실패: {}", context)
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(ErrorResponse.of("VALIDATION_ERROR", "요청 값이 올바르지 않습니다.", context))
