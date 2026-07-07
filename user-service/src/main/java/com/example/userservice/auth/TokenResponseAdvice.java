@@ -2,10 +2,12 @@ package com.example.userservice.auth;
 
 import com.example.userservice.auth.dto.AuthResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.ResolvableType;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -19,7 +21,16 @@ public class TokenResponseAdvice implements ResponseBodyAdvice<AuthResponse> {
 
     @Override
     public boolean supports(MethodParameter returnType, Class converterType) {
-        return AuthResponse.class.isAssignableFrom(returnType.getParameterType());
+        Class<?> parameterType = returnType.getParameterType();
+        if (AuthResponse.class.isAssignableFrom(parameterType)) {
+            return true;
+        }
+        if (!ResponseEntity.class.isAssignableFrom(parameterType)) {
+            return false;
+        }
+
+        Class<?> bodyType = ResolvableType.forMethodParameter(returnType).getGeneric(0).resolve();
+        return bodyType != null && AuthResponse.class.isAssignableFrom(bodyType);
     }
 
     @Override
@@ -29,6 +40,9 @@ public class TokenResponseAdvice implements ResponseBodyAdvice<AuthResponse> {
                                         Class selectedConverterType,
                                         ServerHttpRequest request,
                                         ServerHttpResponse response) {
+        if (body == null) {
+            return null;
+        }
 
         String userAgent = request.getHeaders().getFirst("User-Agent");
 
