@@ -1,6 +1,8 @@
 spring:
   application:
     name: map-service
+  cache:
+    type: redis
 
 ---
 spring:
@@ -21,6 +23,13 @@ spring:
     open-in-view: false
     show-sql: true
 
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+
 management:
   endpoints:
     web:
@@ -31,6 +40,10 @@ map:
   client:
     base-url: ${MAP_CLIENT_BASE_URL:https://dapi.kakao.com}
     api-key: ${MAP_CLIENT_API_KEY:}
+  cache:
+    geocode-ttl: ${MAP_CACHE_GEOCODE_TTL:24h}
+    reverse-geocode-ttl: ${MAP_CACHE_REVERSE_GEOCODE_TTL:24h}
+    region-ttl: ${MAP_CACHE_REGION_TTL:24h}
 
 springdoc:
   swagger-ui:

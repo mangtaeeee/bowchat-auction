@@ -4,6 +4,7 @@ import com.example.mapservice.geocode.dto.response.GeocodeResponse
 import com.example.mapservice.geocode.dto.response.ReverseGeocodeResponse
 import com.example.mapservice.geocode.service.GeocodeService
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -33,11 +34,19 @@ class InternalGeocodeController(
                 responseCode = "200",
                 description = "내부 주소 변환 성공",
                 content = [Content(schema = Schema(implementation = GeocodeResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "요청 파라미터 검증 실패",
+                content = [Content(schema = Schema(implementation = com.example.mapservice.exception.ErrorResponse::class))]
             )
         ]
     )
     @GetMapping("/geocode")
-    fun geocode(@RequestParam @NotBlank address: String): GeocodeResponse =
+    fun geocode(
+        @Parameter(description = "정규화할 주소 문자열", example = "경기 성남시 분당구 판교역로 166")
+        @RequestParam @NotBlank address: String
+    ): GeocodeResponse =
         geocodeService.geocode(address)
 
     @Operation(
@@ -48,12 +57,19 @@ class InternalGeocodeController(
                 responseCode = "200",
                 description = "내부 역지오코딩 성공",
                 content = [Content(schema = Schema(implementation = ReverseGeocodeResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "요청 파라미터 검증 실패",
+                content = [Content(schema = Schema(implementation = com.example.mapservice.exception.ErrorResponse::class))]
             )
         ]
     )
     @GetMapping("/reverse-geocode")
     fun reverseGeocode(
+        @Parameter(description = "해석할 위치의 위도", example = "37.402697")
         @RequestParam @DecimalMin("-90.0") @DecimalMax("90.0") latitude: Double,
+        @Parameter(description = "해석할 위치의 경도", example = "127.104599")
         @RequestParam @DecimalMin("-180.0") @DecimalMax("180.0") longitude: Double
     ): ReverseGeocodeResponse = geocodeService.reverseGeocode(latitude, longitude)
 }

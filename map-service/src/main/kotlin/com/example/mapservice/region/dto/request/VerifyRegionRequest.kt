@@ -15,15 +15,15 @@ import jakarta.validation.constraints.NotBlank
 data class VerifyRegionRequest(
     @field:Schema(description = "검증 요청 주체의 사용자 ID", example = "1")
     val userId: Long,
-    @field:Schema(description = "현재 위치의 위도", example = "37.5665")
+    @field:Schema(description = "현재 위치의 위도", example = "37.402697")
     @field:DecimalMin("-90.0")
     @field:DecimalMax("90.0")
     val latitude: Double,
-    @field:Schema(description = "현재 위치의 경도", example = "126.9780")
+    @field:Schema(description = "현재 위치의 경도", example = "127.104599")
     @field:DecimalMin("-180.0")
     @field:DecimalMax("180.0")
     val longitude: Double,
-    @field:Schema(description = "기대하는 지역 코드", example = "1168054500")
+    @field:Schema(description = "비교 기준이 되는 기대 지역 코드", example = "4113565500")
     @field:NotBlank
     val expectedRegionCode: String
 )

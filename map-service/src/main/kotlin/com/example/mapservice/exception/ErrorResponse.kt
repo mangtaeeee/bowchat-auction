@@ -10,7 +10,7 @@ data class ErrorResponse(
     val code: String,
     @field:Schema(description = "오류 메시지", example = "요청 값이 올바르지 않습니다.")
     val message: String,
-    @field:Schema(description = "오류 상세 컨텍스트")
+    @field:Schema(description = "필드별 검증 오류나 추가 진단 정보를 담는 컨텍스트", example = """{"latitude":"90.0 이하여야 합니다."}""")
     val context: Map<String, Any>? = null
 ) {
     companion object {

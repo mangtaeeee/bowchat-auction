@@ -2,7 +2,9 @@ package com.example.mapservice.client
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.example.mapservice.config.MapClientProperties
+import com.example.mapservice.config.MapCacheNames
 import com.example.mapservice.region.model.RegionInfo
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.context.annotation.Profile
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -23,6 +25,7 @@ class KakaoMapProviderClient(
         }
     }
 
+    @Cacheable(cacheNames = [MapCacheNames.REGION], key = "T(com.example.mapservice.config.MapCacheKeys).coordinate(#latitude, #longitude)")
     override fun resolveRegion(latitude: Double, longitude: Double): RegionInfo {
         val response = mapWebClient.get()
             .uri { builder ->
@@ -56,6 +59,7 @@ class KakaoMapProviderClient(
         )
     }
 
+    @Cacheable(cacheNames = [MapCacheNames.GEOCODE], key = "T(com.example.mapservice.config.MapCacheKeys).address(#address)")
     override fun geocode(address: String): ProviderGeocodeResult {
         val response = mapWebClient.get()
             .uri { builder ->
@@ -86,6 +90,7 @@ class KakaoMapProviderClient(
         )
     }
 
+    @Cacheable(cacheNames = [MapCacheNames.REVERSE_GEOCODE], key = "T(com.example.mapservice.config.MapCacheKeys).coordinate(#latitude, #longitude)")
     override fun reverseGeocode(latitude: Double, longitude: Double): ProviderReverseGeocodeResult {
         val response = mapWebClient.get()
             .uri { builder ->

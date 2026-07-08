@@ -31,6 +31,11 @@ class InternalRegionController(
                 responseCode = "200",
                 description = "내부 지역 해석 성공",
                 content = [Content(schema = Schema(implementation = ResolveRegionResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "요청 본문 검증 실패",
+                content = [Content(schema = Schema(implementation = com.example.mapservice.exception.ErrorResponse::class))]
             )
         ]
     )
@@ -56,6 +61,11 @@ class InternalRegionController(
                 responseCode = "200",
                 description = "내부 동네 인증 성공",
                 content = [Content(schema = Schema(implementation = VerifyRegionResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "요청 본문 검증 실패",
+                content = [Content(schema = Schema(implementation = com.example.mapservice.exception.ErrorResponse::class))]
             )
         ]
     )
