@@ -18,7 +18,7 @@ import kotlin.math.pow
  * 3. 실제 Kakao/Naver client로 교체할 때 인터페이스는 유지한다.
  */
 @Component
-@Profile("dev | test")
+@Profile("test")
 class MockMapProviderClient : MapProviderClient {
 
     override fun resolveRegion(latitude: Double, longitude: Double): RegionInfo {
