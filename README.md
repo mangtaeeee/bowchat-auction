@@ -26,12 +26,6 @@ k6로 1000명 동시 입찰 환경을 시뮬레이션했고 HTTP 실패율을 `7
 
 ---
 
-## 기술 글
-
-- [모놀리식 JWT에서 Keycloak 기반 인증으로 옮기면서 바꾼 것들](./user-service-keycloak-auth-migration-blog.md)
-
----
-
 ## 주요 성과
 
 | 지표 | 개선 전 | 1차 개선 | 2차 개선 |
