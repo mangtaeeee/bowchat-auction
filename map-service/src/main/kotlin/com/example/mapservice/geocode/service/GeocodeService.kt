@@ -17,7 +17,8 @@ class GeocodeService(
 ) {
 
     fun geocode(address: String): GeocodeResponse {
-        val result = mapProviderClient.geocode(address)
+        val normalizedAddress = address.trim().replace("\\s+".toRegex(), " ")
+        val result = mapProviderClient.geocode(normalizedAddress)
         return GeocodeResponse(
             query = address,
             latitude = result.latitude,

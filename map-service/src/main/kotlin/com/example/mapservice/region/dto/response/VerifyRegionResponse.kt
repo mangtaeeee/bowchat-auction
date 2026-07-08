@@ -15,9 +15,9 @@ data class VerifyRegionResponse(
     val userId: Long,
     @field:Schema(description = "인증 성공 여부", example = "true")
     val verified: Boolean,
-    @field:Schema(description = "현재 좌표로 해석된 지역 코드", example = "KR-SEOUL-GANGNAM-01")
+    @field:Schema(description = "현재 좌표로 해석된 지역 코드", example = "4113565500")
     val resolvedRegionCode: String,
-    @field:Schema(description = "현재 좌표로 해석된 지역 이름", example = "서울특별시 강남구 역삼동")
+    @field:Schema(description = "현재 좌표로 해석된 지역 이름", example = "경기도 성남시 분당구 삼평동")
     val resolvedRegionName: String,
     @field:Schema(description = "인증 시각", example = "2026-07-03T10:00:00Z")
     val verifiedAt: Instant

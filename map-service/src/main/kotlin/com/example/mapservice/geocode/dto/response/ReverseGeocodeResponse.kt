@@ -7,14 +7,14 @@ import io.swagger.v3.oas.annotations.media.Schema
  */
 @Schema(description = "좌표를 주소로 역변환한 응답")
 data class ReverseGeocodeResponse(
-    @field:Schema(description = "입력 위도", example = "37.5665")
+    @field:Schema(description = "입력 위도", example = "37.402697")
     val latitude: Double,
-    @field:Schema(description = "입력 경도", example = "126.9780")
+    @field:Schema(description = "입력 경도", example = "127.104599")
     val longitude: Double,
-    @field:Schema(description = "해석된 주소", example = "서울특별시 강남구 역삼동")
+    @field:Schema(description = "좌표를 기준으로 해석된 대표 주소", example = "경기 성남시 분당구 판교역로 166")
     val address: String,
-    @field:Schema(description = "해석된 지역 코드", example = "KR-SEOUL-GANGNAM-01")
+    @field:Schema(description = "해석된 행정동 지역 코드", example = "4113565500")
     val regionCode: String,
-    @field:Schema(description = "해석된 지역 이름", example = "서울특별시 강남구 역삼동")
+    @field:Schema(description = "해석된 행정동 지역 이름", example = "경기도 성남시 분당구 삼평동")
     val regionName: String
 )

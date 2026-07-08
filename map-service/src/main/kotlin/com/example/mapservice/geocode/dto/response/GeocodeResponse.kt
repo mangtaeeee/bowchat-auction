@@ -3,19 +3,16 @@ package com.example.mapservice.geocode.dto.response
 import io.swagger.v3.oas.annotations.media.Schema
 
 /**
- * 주소를 좌표로 바꾼 결과.
- *
- * 지금은 deterministic mock 응답을 돌려준다.
- * 같은 주소는 항상 같은 좌표를 내리도록 지역 프로필 + hash 기반 보정치를 사용한다.
+ * 주소를 좌표로 변환한 결과.
  */
 @Schema(description = "주소를 좌표로 변환한 응답")
 data class GeocodeResponse(
-    @field:Schema(description = "입력된 주소 원문", example = "서울특별시 강남구 역삼동")
+    @field:Schema(description = "입력으로 받은 주소 원문", example = "경기 성남시 분당구 판교역로 166")
     val query: String,
-    @field:Schema(description = "변환된 위도", example = "37.4979")
+    @field:Schema(description = "정규화된 주소 기준 위도", example = "37.402697")
     val latitude: Double,
-    @field:Schema(description = "변환된 경도", example = "127.0276")
+    @field:Schema(description = "정규화된 주소 기준 경도", example = "127.104599")
     val longitude: Double,
-    @field:Schema(description = "정규화된 주소", example = "서울특별시 강남구 역삼동")
+    @field:Schema(description = "카카오 응답 기준으로 정규화된 주소", example = "경기 성남시 분당구 판교역로 166")
     val normalizedAddress: String
 )
